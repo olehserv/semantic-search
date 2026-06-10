@@ -1,9 +1,17 @@
 import subprocess
 import json
+import os
+import sys
+
+# Resolve query_index.py next to this file, and run it with the same
+# interpreter — "python" may not exist on PATH (or point outside the venv),
+# and the old CWD-relative ".claude/scripts/..." path only worked when
+# deployed under exactly that directory.
+QUERY_INDEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "query_index.py")
 
 def search_code(query):
     result = subprocess.run(
-        ["python", ".claude/scripts/query_index.py", query],
+        [sys.executable, QUERY_INDEX, query],
         capture_output=True,
         text=True
     )
