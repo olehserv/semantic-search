@@ -1,15 +1,14 @@
-import torch
 import os
 import pickle
 
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.vector_stores.qdrant import QdrantVectorStore
-from qdrant_client.http.exceptions import UnexpectedResponse
 from datetime import datetime
-import time
 
-import model_setup
+# Imported for its side effect: configures Settings.embed_model, which
+# VectorStoreIndex uses to embed nodes during the build.
+import model_setup  # noqa: F401
 import qdrant
 
 PROJECT_PATH = "./"
@@ -88,7 +87,7 @@ def build_index(force=False):
     # an in-memory index and never creates/populates the Qdrant collection.
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
-    index = VectorStoreIndex(
+    VectorStoreIndex(
         nodes,
         storage_context=storage_context,
         show_progress=True

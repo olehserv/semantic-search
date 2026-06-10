@@ -1,6 +1,5 @@
 from qdrant_client import QdrantClient
 import subprocess
-import requests
 import time
 import os
 
@@ -24,7 +23,7 @@ def get_Qdrant_client():
 
 
 def ensure_qdrant():
-    if not get_Qdrant_client() is None:
+    if get_Qdrant_client() is not None:
         return
 
     print("🚀 Starting Qdrant container...")
@@ -42,7 +41,7 @@ def ensure_qdrant():
 
     # чекаємо поки підніметься
     for _ in range(15):
-        if not get_Qdrant_client() is None:
+        if get_Qdrant_client() is not None:
             print("✅ Qdrant is ready")
             return
         time.sleep(1)

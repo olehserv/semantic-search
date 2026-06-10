@@ -1,4 +1,4 @@
-from llama_index.core import StorageContext, load_index_from_storage, Settings
+from llama_index.core import Settings
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.vector_stores.qdrant import QdrantVectorStore
@@ -18,8 +18,11 @@ from time import time
 # the final JSON result (mcp_server.py parses this script's stdout as JSON).
 print = functools.partial(print, file=sys.stderr, flush=True)
 
-import model_setup
-import qdrant
+# Imported for its side effect: configures Settings.embed_model / Settings.llm.
+# Deliberately after the print-to-stderr redirect above (E402) so any import
+# noise cannot contaminate the JSON on stdout.
+import model_setup  # noqa: E402, F401
+import qdrant  # noqa: E402
 
 INDEX_PATH = "./.claude/index"
 EMB_CACHE_PATH = "./.claude/cache/embeddings.pkl"
