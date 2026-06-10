@@ -135,8 +135,9 @@ results. The server reads one JSON request per line on stdin, e.g.:
 
 - **BM25 requires a (re)build.** The index is loaded from the Qdrant vector
   store, which leaves the in-memory document store empty. `build_index.py`
-  persists the chunk nodes to `bm25.pkl` for keyword search — so until you run a
-  build with the current code, BM25 returns nothing and search is vector-only.
+  persists the chunk nodes to `bm25.pkl` for keyword search — until a build has
+  written that cache, queries fail with an error telling you to run
+  `build_index.py`.
 - **Embedding cache.** Query-time embeddings are cached in
   `./.claude/cache/embeddings.pkl` to speed up repeated runs.
 - **GPU / Ollama assumptions.** Embeddings default to CUDA and answers default to

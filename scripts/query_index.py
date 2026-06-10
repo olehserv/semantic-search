@@ -49,12 +49,22 @@ cache_warmup()
 
 def get_bm25_retriever(index):
     global bm25_retriever_nodes_cache
-    if bm25_retriever_nodes_cache is None:
-        bm25_retriever_nodes_cache = list(index.docstore.docs.values())
-        
+    # Treat an empty list the same as no cache: a pre-fix bm25.pkl may contain
+    # [] (the old code persisted before validating), and an index loaded from
+    # the Qdrant vector store always has an empty docstore.
+    if not bm25_retriever_nodes_cache:
+        nodes = list(index.docstore.docs.values())
+        if not nodes:
+            raise RuntimeError(
+                "No nodes available for BM25 keyword search: the index was "
+                "loaded from Qdrant (empty docstore) and no BM25 node cache "
+                f"exists at {BM25_CACHE_PATH}. Run build_index.py first."
+            )
+        bm25_retriever_nodes_cache = nodes
+
         with open(BM25_CACHE_PATH, "wb") as f:
             pickle.dump(bm25_retriever_nodes_cache, f)
-    
+
     return BM25Retriever.from_defaults(nodes=bm25_retriever_nodes_cache)
 
 
