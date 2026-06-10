@@ -56,13 +56,8 @@ call it over stdin/stdout.
 ### Python dependencies
 
 ```bash
-pip install \
-  llama-index-core \
-  llama-index-vector-stores-qdrant \
-  llama-index-embeddings-huggingface \
-  llama-index-llms-ollama \
-  llama-index-retrievers-bm25 \
-  qdrant-client torch numpy requests
+pip install -r requirements.txt        # runtime (pinned)
+pip install -r requirements-dev.txt    # + pytest/ruff for development
 ```
 
 ## Layout / deployment
