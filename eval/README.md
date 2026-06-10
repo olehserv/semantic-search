@@ -1,7 +1,8 @@
-# Retrieval Evaluation Harness (TODO.md §0)
+# Retrieval Evaluation Harness
 
 This is the measurement gate for the search system. Every retrieval change in
-`TODO.md` (RRF fusion, code-aware chunking, a re-ranker, a different embedding
+Phase 2 of `docs/reviews/2026-06-11-production-readiness-plan.md` (RRF fusion,
+code-aware chunking, a re-ranker, a different embedding
 model, …) should be validated here — **a change is an improvement only if the
 metrics say so.** Without this, every tuning decision is a guess.
 

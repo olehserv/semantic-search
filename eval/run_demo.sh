@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# End-to-end demo of the retrieval eval harness (TODO.md §0).
+# End-to-end demo of the retrieval eval harness (see eval/README.md).
 #
 # It indexes the tiny sample .NET corpus into Qdrant and then runs the eval
 # harness over eval/golden.jsonl, printing Recall@k / MRR / nDCG@k. This proves

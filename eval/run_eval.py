@@ -1,8 +1,9 @@
-"""Retrieval evaluation harness (TODO.md §0).
+"""Retrieval evaluation harness.
 
 Runs the search pipeline's `query()` over a labelled golden set and reports
 Recall@k, MRR, and nDCG@k — both per query and averaged. This is the gate that
-makes every retrieval change in TODO.md measurable instead of guessed.
+makes every retrieval change (docs/reviews/2026-06-11-production-readiness-plan.md,
+Phase 2) measurable instead of guessed.
 
 Granularity: evaluation is at the **file** level. A query is "answered" when the
 relevant file(s) appear among the retrieved chunks' files. Golden labels list
@@ -102,7 +103,7 @@ def _print_report(report, k):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Retrieval eval harness (TODO.md §0)")
+    parser = argparse.ArgumentParser(description="Retrieval eval harness")
     parser.add_argument("--golden", default="eval/golden.jsonl",
                         help="Path to the JSONL golden set")
     parser.add_argument("--k", type=int, default=5, help="Cutoff k for the metrics")
