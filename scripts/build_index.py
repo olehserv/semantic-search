@@ -41,7 +41,7 @@ def load_documents():
         ]
     ).load_data()
 
-def build_index():
+def build_index(force=False):
     qdrant.ensure_qdrant()
     client = qdrant.get_Qdrant_client()
     if client is None:
@@ -52,10 +52,10 @@ def build_index():
     # get_collections() returns a CollectionsResponse, not a list of names —
     # `name in response` never matched, so the replace guard was dead code.
     existing = [c.name for c in qdrant_cols.collections]
-    if qdrant.COLLECTION_NAME in existing:
-        print(f"Are you wanna replace current QDrant collection {qdrant.COLLECTION_NAME} (y/n)?")
+    if qdrant.COLLECTION_NAME in existing and not force:
+        print(f"Replace existing Qdrant collection '{qdrant.COLLECTION_NAME}'? (y/n)")
         if input().lower() != "y":
-            print(f"[DEBUG] [{datetime.now()}] Termanated .")
+            print(f"[DEBUG] [{datetime.now()}] Terminated.")
             return
 
     print(f"[DEBUG] [{datetime.now()}] Loading documents...")
@@ -105,4 +105,11 @@ def build_index():
     print(f"[DEBUG] [{datetime.now()}] ✅ Wrote {len(nodes)} nodes to {BM25_CACHE_PATH}")
 
 if __name__ == "__main__":
-    build_index()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Build the Qdrant search index")
+    parser.add_argument(
+        "-y", "--force", action="store_true",
+        help="replace an existing collection without prompting",
+    )
+    build_index(force=parser.parse_args().force)

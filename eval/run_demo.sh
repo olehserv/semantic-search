@@ -28,10 +28,10 @@ pip install --quiet -r "$ROOT/eval/requirements-eval.txt"
 
 echo "==> Building the index over the sample corpus (Qdrant auto-starts via Docker)"
 # build_index.py uses PROJECT_PATH="./" and writes its caches relative to CWD,
-# so we run it from inside the corpus. `echo y` answers the replace-collection
-# prompt non-interactively. scripts/ must be importable by bare module name.
+# so we run it from inside the corpus. --force replaces an existing collection
+# without prompting. scripts/ must be importable by bare module name.
 cd "$CORPUS"
-echo y | PYTHONPATH="$ROOT/scripts" python "$ROOT/scripts/build_index.py"
+PYTHONPATH="$ROOT/scripts" python "$ROOT/scripts/build_index.py" --force
 
 echo "==> Running the eval harness"
 # Stay in the corpus dir so query_index reads the same BM25/embedding caches the
