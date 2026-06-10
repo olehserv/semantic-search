@@ -3,9 +3,9 @@
 > Living document. Update the **Status log** and **Next actions** at the end of
 > every working session so anyone (human or agent) can pick the project up cold.
 
-**Last updated:** 2026-06-11
-**Repo state:** commit `b4c8540` ("add evaluation"), branch `main`, clean tree
-(plus the review docs added 2026-06-11).
+**Last updated:** 2026-06-11 (Phase 0 complete)
+**Repo state:** branch `phase-0-fixes` (6 commits ahead of `main`), clean tree.
+Awaiting decision: merge to `main` or open a PR.
 
 ---
 
@@ -20,13 +20,13 @@ Code) as an MCP tool. See `README.md` for usage.
 
 | Area | State |
 |------|-------|
-| Indexing (`scripts/build_index.py`) | Works. Destructive rebuild (deletes collection first), interactive prompt, no incremental mode. |
-| Retrieval (`scripts/query_index.py`) | Works after a build. **Crashes + poisons `bm25.pkl` if run before any build** (confirmed). Fusion math is flawed (min-max over mixed scales); candidates truncated before re-rank. |
+| Indexing (`scripts/build_index.py`) | Works. `--force` flag for non-interactive rebuilds (Phase 0.4). Still destructive (deletes collection first), no incremental mode. |
+| Retrieval (`scripts/query_index.py`) | Works after a build. Pre-build queries now fail with an actionable error instead of poisoning `bm25.pkl` (C2 fixed, Phase 0.2, regression-tested). Fusion math still flawed (min-max over mixed scales); candidates truncated before re-rank — Phase 2. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, brittle retry heuristic. |
-| Agent integration (`scripts/mcp_server.py`, `mcp.json`) | **Does not work with real MCP clients** — custom line protocol, not JSON-RPC/MCP; spawns a cold subprocess (~30 s model load) per query. |
-| Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 17 passing unit tests (`python3 -m pytest tests/ -q`), end-to-end demo (`bash eval/run_demo.sh`). Only 8 toy golden queries so far. |
-| Dependencies | No root manifest, nothing pinned (only `eval/requirements-eval.txt`, unpinned). `.venv/` exists locally (5.2 GB, gitignored). |
-| CI | None. |
+| Agent integration (`scripts/mcp_server.py`, `mcp.json`) | **Still does not work with real MCP clients** — custom line protocol, not JSON-RPC/MCP; cold subprocess per query (now via `sys.executable` + `__file__`-relative path, Phase 0.3). Full fix is Phase 1. |
+| Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 22 passing unit tests (`.venv/bin/python -m pytest tests/ -q`; 5 skip without the ML stack), end-to-end demo (`bash eval/run_demo.sh`). Only 8 toy golden queries so far. |
+| Dependencies | `requirements.txt` (pinned) + `requirements-dev.txt` at root; `eval/requirements-eval.txt` includes the root manifest (Phase 0.1). `.venv/` exists locally (5.2 GB, gitignored). |
+| CI | GitHub Actions (`.github/workflows/ci.yml`): ruff + py_compile + pytest, no ML stack (heavy tests self-skip). Phase 0.5. |
 | Docs | `README.md` solid. **Approved but UNIMPLEMENTED design** for a continuous search service: `docs/superpowers/specs/2026-06-01-continuous-search-service-design.md` + step-by-step plan in `docs/superpowers/plans/`. Several files reference a `TODO.md` that no longer exists. |
 
 ## Key review documents (read these first)
@@ -53,9 +53,6 @@ Code) as an MCP tool. See `README.md` for usage.
 - `eval/run_demo.sh` rebuilds the Qdrant collection named in
   `scripts/qdrant.py` (`COLLECTION_NAME = "demo"`) — **it will wipe a real
   index** that uses the same name.
-- Running `query_index.py` before ever running `build_index.py` writes an
-  empty `bm25.pkl`; all queries then fail until the file is deleted or the
-  index is rebuilt (review finding C2).
 - Swapping the embedding model without deleting
   `./.claude/cache/embeddings.pkl` silently mixes vectors from two models
   (review finding H3).
@@ -64,29 +61,29 @@ Code) as an MCP tool. See `README.md` for usage.
 
 ## Next actions (in order — from the production-readiness plan)
 
-1. **Phase 0.1** — root `requirements.txt` (pinned) + `requirements-dev.txt`
-   (contents already specified in Task 1 of
-   `docs/superpowers/plans/2026-06-01-continuous-search-service.md`).
-2. **Phase 0.2** — fix the BM25 poisoned-cache crash (C2) + regression test.
-3. **Phase 0.4/0.5** — `--force` flag for `build_index.py`; GitHub Actions CI
-   (pytest + ruff + py_compile).
-4. **Phase 1.1** — rewrite `mcp_server.py` on the official `mcp` SDK
+1. **Merge/PR the `phase-0-fixes` branch** (Phase 0 is complete on it).
+2. **Phase 1.1** — rewrite `mcp_server.py` on the official `mcp` SDK
    (FastMCP, stdio); replace `mcp.json` with a proper `.mcp.json`; verify from
    Claude Code.
-5. **Phase 1.2** — implement the continuous-search-service design (the
+3. **Phase 1.2** — implement the continuous-search-service design (the
    existing plan in `docs/superpowers/plans/` is the work order).
-6. Then Phase 2 (RRF fusion, code-aware chunking, golden set → 30–50 queries),
+4. Then Phase 2 (RRF fusion, code-aware chunking, golden set → 30–50 queries),
    gated on recorded eval baselines.
 
 ## How to verify the project right now
 
 ```bash
-python3 -m pytest tests/ -q          # 17 tests, all pass (no ML stack needed)
-bash eval/run_demo.sh                # full e2e: venv + Qdrant + index + eval
+.venv/bin/python -m pytest tests/ -q  # 22 tests (5 need the ML stack and skip elsewhere)
+.venv/bin/ruff check scripts/ eval/ tests/
+bash eval/run_demo.sh                 # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
 
+- **2026-06-11 (later)** — Phase 0 executed on branch `phase-0-fixes` (Claude):
+  0.1 pinned manifests, 0.2 C2 fix + 5 regression tests, 0.3 robust subprocess
+  invocation, 0.4 `--force` flag, 0.5 CI workflow + lint cleanup, 0.6 doc
+  reference fixes. 22 tests green, ruff clean. Not yet merged.
 - **2026-06-11** — Senior architecture review completed (Claude). Confirmed
   C2 (BM25 cache poisoning) by reproduction. Produced review + production
   plan in `docs/reviews/`, created this handoff file. No code changed.
