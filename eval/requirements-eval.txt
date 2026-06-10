@@ -1,0 +1,12 @@
+# Runtime dependencies needed to run the eval demo end-to-end. Evaluation itself
+# is retrieval-only and never calls the LLM, but model_setup.py imports the
+# Ollama LLM at module-load time (and build_index/query_index import model_setup),
+# so the Ollama package must be present even though no LLM is invoked.
+llama-index-core
+llama-index-vector-stores-qdrant
+llama-index-embeddings-huggingface
+llama-index-retrievers-bm25
+llama-index-llms-ollama
+qdrant-client
+torch
+numpy

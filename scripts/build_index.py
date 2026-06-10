@@ -2,7 +2,7 @@ import torch
 import os
 import pickle
 
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -83,9 +83,14 @@ def build_index():
 
     print(f"[DEBUG] [{datetime.now()}] Building index in Qdrant...")
 
+    # Wire the vector store through a StorageContext so the index is actually
+    # persisted to Qdrant. Passing vector_store= to the constructor alone builds
+    # an in-memory index and never creates/populates the Qdrant collection.
+    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
     index = VectorStoreIndex(
         nodes,
-        vector_store=vector_store,
+        storage_context=storage_context,
         show_progress=True
     )
 

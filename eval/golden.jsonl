@@ -1,0 +1,8 @@
+{"query": "where is the user password verified at login", "relevant_files": ["AuthService.cs"]}
+{"query": "how is the database context configured", "relevant_files": ["AppDbContext.cs"]}
+{"query": "where are new orders created through the API", "relevant_files": ["OrdersController.cs"]}
+{"query": "where are confirmation emails sent over SMTP", "relevant_files": ["EmailService.cs"]}
+{"query": "where is dependency injection configured at startup", "relevant_files": ["Program.cs"]}
+{"query": "how is the HTTP middleware request pipeline set up", "relevant_files": ["Program.cs"]}
+{"query": "how are entity foreign keys and relationships defined", "relevant_files": ["AppDbContext.cs"]}
+{"query": "what happens when a customer places an order", "relevant_files": ["OrdersController.cs", "EmailService.cs"]}
