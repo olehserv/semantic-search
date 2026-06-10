@@ -1,0 +1,95 @@
+# Project Handoff — Semantic Code Search
+
+> Living document. Update the **Status log** and **Next actions** at the end of
+> every working session so anyone (human or agent) can pick the project up cold.
+
+**Last updated:** 2026-06-11
+**Repo state:** commit `b4c8540` ("add evaluation"), branch `main`, clean tree
+(plus the review docs added 2026-06-11).
+
+---
+
+## What this project is
+
+Hybrid semantic + keyword (BM25) code search over a .NET codebase, backed by
+Qdrant + a local HuggingFace embedding model (`BAAI/bge-base-en-v1.5`), with an
+optional Ollama-powered Q&A layer, intended to be exposed to AI agents (Claude
+Code) as an MCP tool. See `README.md` for usage.
+
+## Current state (2026-06-11)
+
+| Area | State |
+|------|-------|
+| Indexing (`scripts/build_index.py`) | Works. Destructive rebuild (deletes collection first), interactive prompt, no incremental mode. |
+| Retrieval (`scripts/query_index.py`) | Works after a build. **Crashes + poisons `bm25.pkl` if run before any build** (confirmed). Fusion math is flawed (min-max over mixed scales); candidates truncated before re-rank. |
+| Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, brittle retry heuristic. |
+| Agent integration (`scripts/mcp_server.py`, `mcp.json`) | **Does not work with real MCP clients** — custom line protocol, not JSON-RPC/MCP; spawns a cold subprocess (~30 s model load) per query. |
+| Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 17 passing unit tests (`python3 -m pytest tests/ -q`), end-to-end demo (`bash eval/run_demo.sh`). Only 8 toy golden queries so far. |
+| Dependencies | No root manifest, nothing pinned (only `eval/requirements-eval.txt`, unpinned). `.venv/` exists locally (5.2 GB, gitignored). |
+| CI | None. |
+| Docs | `README.md` solid. **Approved but UNIMPLEMENTED design** for a continuous search service: `docs/superpowers/specs/2026-06-01-continuous-search-service-design.md` + step-by-step plan in `docs/superpowers/plans/`. Several files reference a `TODO.md` that no longer exists. |
+
+## Key review documents (read these first)
+
+- `docs/reviews/2026-06-11-architecture-review.md` — full senior review;
+  findings catalogued as C1–C4 (critical), H1–H7 (high), M1–M11 (medium).
+- `docs/reviews/2026-06-11-production-readiness-plan.md` — prioritized
+  4-phase execution plan with exit criteria.
+
+## Key decisions already made (don't re-litigate)
+
+1. **Long-lived search service over per-query subprocess** — approved design,
+   2026-06-01 (Flask, warm engine, BM25 rebuilt in-memory from Qdrant scroll,
+   no BM25 pickle). Implementation plan exists; execute it, don't redesign.
+2. **Eval-gated retrieval tuning** — any change to chunking/fusion/ranking
+   must show improvement on `eval/run_eval.py` metrics before merging.
+3. **No LLM in the service** — `search_codebase` is retrieval-only; `ask.py`
+   stays a separate CLI (YAGNI, per the design doc).
+4. **Device auto-detect** — `cuda if available else cpu` (already implemented
+   in `model_setup.py`).
+
+## Known landmines
+
+- `eval/run_demo.sh` rebuilds the Qdrant collection named in
+  `scripts/qdrant.py` (`COLLECTION_NAME = "demo"`) — **it will wipe a real
+  index** that uses the same name.
+- Running `query_index.py` before ever running `build_index.py` writes an
+  empty `bm25.pkl`; all queries then fail until the file is deleted or the
+  index is rebuilt (review finding C2).
+- Swapping the embedding model without deleting
+  `./.claude/cache/embeddings.pkl` silently mixes vectors from two models
+  (review finding H3).
+- Importing `query_index` or `model_setup` has heavy side effects (model
+  load, cache reads) — tests stub `model_setup` in `tests/conftest.py`.
+
+## Next actions (in order — from the production-readiness plan)
+
+1. **Phase 0.1** — root `requirements.txt` (pinned) + `requirements-dev.txt`
+   (contents already specified in Task 1 of
+   `docs/superpowers/plans/2026-06-01-continuous-search-service.md`).
+2. **Phase 0.2** — fix the BM25 poisoned-cache crash (C2) + regression test.
+3. **Phase 0.4/0.5** — `--force` flag for `build_index.py`; GitHub Actions CI
+   (pytest + ruff + py_compile).
+4. **Phase 1.1** — rewrite `mcp_server.py` on the official `mcp` SDK
+   (FastMCP, stdio); replace `mcp.json` with a proper `.mcp.json`; verify from
+   Claude Code.
+5. **Phase 1.2** — implement the continuous-search-service design (the
+   existing plan in `docs/superpowers/plans/` is the work order).
+6. Then Phase 2 (RRF fusion, code-aware chunking, golden set → 30–50 queries),
+   gated on recorded eval baselines.
+
+## How to verify the project right now
+
+```bash
+python3 -m pytest tests/ -q          # 17 tests, all pass (no ML stack needed)
+bash eval/run_demo.sh                # full e2e: venv + Qdrant + index + eval
+```
+
+## Status log
+
+- **2026-06-11** — Senior architecture review completed (Claude). Confirmed
+  C2 (BM25 cache poisoning) by reproduction. Produced review + production
+  plan in `docs/reviews/`, created this handoff file. No code changed.
+- **2026-06-01** — Continuous-search-service design approved + implementation
+  plan written (`docs/superpowers/`). Not yet implemented.
+- **(earlier)** — Eval harness added (`b4c8540`); initial pipeline (`d8e3326`).
