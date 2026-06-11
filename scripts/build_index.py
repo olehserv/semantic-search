@@ -42,7 +42,7 @@ def load_documents():
 
 def build_index(force=False):
     qdrant.ensure_qdrant()
-    client = qdrant.get_Qdrant_client()
+    client = qdrant.get_qdrant_client()
     if client is None:
         raise RuntimeError("Could not connect to Qdrant")
     qdrant_cols = client.get_collections()
