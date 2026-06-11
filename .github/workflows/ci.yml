@@ -21,7 +21,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install tooling (no ML stack)
-        run: pip install pytest==9.0.3 ruff==0.15.16
+        # requests lets the MCP-shim tests run here; the flask/llama-index
+        # tests still skip themselves.
+        run: pip install pytest==9.0.3 ruff==0.15.16 requests==2.34.2
 
       - name: Lint (ruff)
         run: ruff check scripts/ eval/ tests/
