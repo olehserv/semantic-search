@@ -1,0 +1,5 @@
+# The eval demo needs the same (pinned) runtime stack as the pipeline itself.
+# Evaluation is retrieval-only and never calls the LLM, but model_setup.py
+# imports the Ollama LLM at module-load time (and build_index/query_index
+# import model_setup), so the Ollama package must be present anyway.
+-r ../requirements.txt

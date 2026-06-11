@@ -1,9 +1,8 @@
-from llama_index.core import StorageContext, load_index_from_storage, Settings
+from llama_index.core import Settings
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.core import VectorStoreIndex
-import numpy as np
 from collections import defaultdict
 
 import os
@@ -18,10 +17,13 @@ from time import time
 # the final JSON result (mcp_server.py parses this script's stdout as JSON).
 print = functools.partial(print, file=sys.stderr, flush=True)
 
-import model_setup
-import qdrant
+# Imported for its side effect: configures Settings.embed_model / Settings.llm.
+# Deliberately after the print-to-stderr redirect above (E402) so any import
+# noise cannot contaminate the JSON on stdout.
+import model_setup  # noqa: E402, F401
+import qdrant  # noqa: E402
+from ranking import expand_query, score_candidates  # noqa: E402
 
-INDEX_PATH = "./.claude/index"
 EMB_CACHE_PATH = "./.claude/cache/embeddings.pkl"
 BM25_CACHE_PATH = "./.claude/cache/bm25.pkl"
 
@@ -49,18 +51,28 @@ cache_warmup()
 
 def get_bm25_retriever(index):
     global bm25_retriever_nodes_cache
-    if bm25_retriever_nodes_cache is None:
-        bm25_retriever_nodes_cache = list(index.docstore.docs.values())
-        
+    # Treat an empty list the same as no cache: a pre-fix bm25.pkl may contain
+    # [] (the old code persisted before validating), and an index loaded from
+    # the Qdrant vector store always has an empty docstore.
+    if not bm25_retriever_nodes_cache:
+        nodes = list(index.docstore.docs.values())
+        if not nodes:
+            raise RuntimeError(
+                "No nodes available for BM25 keyword search: the index was "
+                "loaded from Qdrant (empty docstore) and no BM25 node cache "
+                f"exists at {BM25_CACHE_PATH}. Run build_index.py first."
+            )
+        bm25_retriever_nodes_cache = nodes
+
         with open(BM25_CACHE_PATH, "wb") as f:
             pickle.dump(bm25_retriever_nodes_cache, f)
-    
+
     return BM25Retriever.from_defaults(nodes=bm25_retriever_nodes_cache)
 
 
 def load_index():
     qdrant.ensure_qdrant()
-    client = qdrant.get_Qdrant_client()
+    client = qdrant.get_qdrant_client()
     if client is None:
         raise RuntimeError("Could not connect to Qdrant")
     vector_store = QdrantVectorStore(
@@ -107,9 +119,9 @@ def build_query_engine():
 
 _retrieve_cache = {}
 
-def hybrid_retrieve(query, vector, bm25, vector_wide):    
+def hybrid_retrieve(query, vector, bm25, vector_wide):
     if query in _retrieve_cache:
-            return _retrieve_cache[query]
+        return _retrieve_cache[query]
 
     results = []
     print(f"[DEBUG] [{datetime.now()}] hybrid_retrieve start for query '{query}'")
@@ -132,30 +144,6 @@ def get_engine():
     if _engine is None:
         _engine = build_query_engine()
     return _engine
-
-
-def expand_query(q):
-    return [
-        q,
-        f"{q} implementation",
-        f"{q} .NET core backend",
-    ]
-
-
-def cosine(a, b):
-    norm_a = np.linalg.norm(a)
-    norm_b = np.linalg.norm(b)
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return np.dot(a, b) / (norm_a * norm_b)
-
-
-def make_normalizer(min_s, max_s):
-    def normalize(x):
-        if max_s - min_s == 0:
-            return 0.0
-        return (x - min_s) / (max_s - min_s)
-    return normalize
 
 
 def get_embedding(text, embed_model):
@@ -189,10 +177,10 @@ def query(q, alpha=0.7, freq_weight=0.1, top_k=8):
         else:
             weight = 1.0
 
-        nodes = hybrid_retrieve(sub_q, vector, bm25, vector_wide)        
+        nodes = hybrid_retrieve(sub_q, vector, bm25, vector_wide)
         for n in nodes:
-                node_counts[n.node_id] += weight
-                all_nodes.append(n)
+            node_counts[n.node_id] += weight
+            all_nodes.append(n)
 
     seen = set()
     ordered_nodes = []
@@ -225,27 +213,12 @@ def query(q, alpha=0.7, freq_weight=0.1, top_k=8):
     print(f"[DEBUG] [{datetime.now()}] query(): embedding END")
 
     print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks START")
-    scores = [float(n.score) for n in ordered_nodes if n.score is not None]
-
-    min_s = min(scores) if scores else 0
-    max_s = max(scores) if scores else 1
-
-    normalizeFunc = make_normalizer(min_s, max_s)
-    scored = []
-
-    for n in ordered_nodes:
-        emb_score = cosine(query_emb, text_embeddings[n.node_id])
-        retriever_score = normalizeFunc(float(n.score)) if n.score is not None else 0.0
-        freq_boost = np.log1p(node_counts[n.node_id]) / np.log1p(max(node_counts.values()))
-        final_score = (
-            alpha * emb_score +
-            (1 - alpha) * retriever_score +
-            freq_weight * freq_boost
-        )
-        scored.append((n, final_score))
-
+    scored = score_candidates(
+        ordered_nodes, node_counts, query_emb, text_embeddings,
+        alpha=alpha, freq_weight=freq_weight,
+    )
     ranked = sorted(scored, key=lambda x: x[1], reverse=True)
-    print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks START")
+    print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks END")
 
     final_nodes = [n for n, _ in ranked[:top_k]]
 

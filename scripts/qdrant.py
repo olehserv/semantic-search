@@ -1,6 +1,5 @@
 from qdrant_client import QdrantClient
 import subprocess
-import requests
 import time
 import os
 
@@ -11,9 +10,9 @@ COLLECTION_NAME = "demo"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-compose_file = os.path.join(BASE_DIR, "docker-compose.yml")
+COMPOSE_FILE = os.path.join(BASE_DIR, "docker-compose.yml")
 
-def get_Qdrant_client():
+def get_qdrant_client():
     try:
         client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
         client.get_collections()
@@ -24,25 +23,33 @@ def get_Qdrant_client():
 
 
 def ensure_qdrant():
-    if not get_Qdrant_client() is None:
+    if get_qdrant_client() is not None:
         return
 
     print("🚀 Starting Qdrant container...")
-    
+
     try:
         subprocess.run(
-            ["docker", "compose", "-f", compose_file, "-p", "ai-agent", "up", "-d"],
+            ["docker", "compose", "-f", COMPOSE_FILE, "-p", "ai-agent", "up", "-d"],
             check=True
         )
     except (subprocess.CalledProcessError, FileNotFoundError):
-        subprocess.run(
-            ["docker-compose", "-f", compose_file, "-p", "ai-agent", "up", "-d"],
-            check=True
-        )
+        try:
+            subprocess.run(
+                ["docker-compose", "-f", COMPOSE_FILE, "-p", "ai-agent", "up", "-d"],
+                check=True
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise RuntimeError(
+                "Could not start Qdrant: neither 'docker compose' nor "
+                "'docker-compose' is available. Start it manually, e.g.:\n"
+                f"  docker run -d --name qdrant-local -p {QDRANT_PORT}:6333 "
+                "-v qdrant_storage:/qdrant/storage qdrant/qdrant"
+            ) from e
 
-    # чекаємо поки підніметься
+    # wait until the container is up
     for _ in range(15):
-        if not get_Qdrant_client() is None:
+        if get_qdrant_client() is not None:
             print("✅ Qdrant is ready")
             return
         time.sleep(1)

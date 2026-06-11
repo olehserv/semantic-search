@@ -1,0 +1,13 @@
+# Runtime dependencies for the search pipeline (scripts/).
+# Pinned to the versions the project is developed and tested against —
+# LlamaIndex regularly breaks APIs between minor releases.
+# (flask will join this list with the Phase 1 search service.)
+llama-index-core==0.14.22
+llama-index-vector-stores-qdrant==0.10.1
+llama-index-embeddings-huggingface==0.7.0
+llama-index-llms-ollama==0.10.1
+llama-index-retrievers-bm25==0.7.1
+qdrant-client==1.18.0
+torch==2.12.0
+numpy==2.4.6
+requests==2.34.2
