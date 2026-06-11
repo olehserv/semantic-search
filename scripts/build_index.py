@@ -1,6 +1,3 @@
-import os
-import pickle
-
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.vector_stores.qdrant import QdrantVectorStore
@@ -12,11 +9,6 @@ import model_setup  # noqa: F401
 import qdrant
 
 PROJECT_PATH = "./"
-
-# Must match query_index.BM25_CACHE_PATH. Duplicated rather than imported:
-# importing query_index here would trigger its import-time side effects
-# (cache warmup + a Qdrant connection).
-BM25_CACHE_PATH = "./.claude/cache/bm25.pkl"
 
 
 def load_documents():
@@ -94,14 +86,6 @@ def build_index(force=False):
     )
 
     print(f"[DEBUG] [{datetime.now()}] ✅ Index successfully built in Qdrant")
-
-    # Persist nodes for BM25: load_index() rebuilds the index from the Qdrant
-    # vector store, which leaves index.docstore.docs empty, so query_index's
-    # BM25 retriever has no nodes to work with. Write them here for it to load.
-    os.makedirs(os.path.dirname(BM25_CACHE_PATH), exist_ok=True)
-    with open(BM25_CACHE_PATH, "wb") as f:
-        pickle.dump(nodes, f)
-    print(f"[DEBUG] [{datetime.now()}] ✅ Wrote {len(nodes)} nodes to {BM25_CACHE_PATH}")
 
 if __name__ == "__main__":
     import argparse
