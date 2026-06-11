@@ -10,5 +10,24 @@ services:
       - qdrant_storage:/qdrant/storage
     restart: unless-stopped
 
+  search-service:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: search-service
+    depends_on:
+      - qdrant
+    ports:
+      - "8000:8000"
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_AUTOSTART=0
+      - HF_HOME=/models
+    volumes:
+      - hf_models:/models
+    restart: unless-stopped
+
 volumes:
   qdrant_storage:
+  hf_models:
