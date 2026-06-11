@@ -4,9 +4,10 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-11 (Phase 0 + refactoring + docs done)
-**Repo state:** branch `phase-0-fixes`, pushed; PR open against `main`:
-https://github.com/olehserv/semantic-search/pull/1
+**Last updated:** 2026-06-12 (Phase 1 done)
+**Repo state:** branch `phase-1-search-service`, pushed; PR open against
+`main`: https://github.com/olehserv/semantic-search/pull/2
+(PR #1 / Phase 0 is merged.)
 
 ---
 
@@ -22,13 +23,14 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 | Area | State |
 |------|-------|
 | Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). Still destructive (deletes the collection first), no incremental mode. |
-| Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. A query before the first build now fails with a clear error instead of breaking `bm25.pkl` (C2 fixed, with regression tests). The scoring math is extracted to `ranking.py` (pure numpy, 10 unit tests). Still open for Phase 2: min-max fusion over mixed scales, and candidates cut before ranking. |
+| Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Still open for Phase 2: min-max fusion over mixed scales, and candidates cut before ranking. |
+| Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host: first query 0.65 s, second 0.10 s (was ~30 s per query). `GET /health`, `POST /search`, JSON errors (400/500). Docker files written but container not yet verified (no compose plugin on this machine). |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
-| Agent integration (`scripts/mcp_server.py`, `mcp.json`) | **Still not usable by real MCP clients** — custom line protocol, not JSON-RPC/MCP; new process per query (slow cold start). Real fix is Phase 1. |
+| Agent integration (`scripts/mcp_server.py`, `.mcp.json`) | **Real MCP server (Phase 1).** Official `mcp` SDK, FastMCP, stdio; one tool `search_codebase` that forwards to the service over HTTP with a timeout. Verified end-to-end with an MCP stdio client: initialize → tools/list → tools/call returns ranked results; service down → structured `{"error", "hint"}`. Legacy `mcp.json` deleted. |
 | Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 34 passing unit tests (heavy tests skip without the ML stack), end-to-end demo. Demo checked 2026-06-11: 1.000 on all metrics for the 8 toy questions. |
-| Dependencies | `requirements.txt` (pinned) + `requirements-dev.txt` at the root; `eval/requirements-eval.txt` points to the root file (Phase 0.1). Local `.venv/` is 5.2 GB, gitignored. |
-| CI | GitHub Actions (`.github/workflows/ci.yml`): ruff + py_compile + pytest, without the ML stack (heavy tests skip themselves). |
-| Docs | `README.md` is current. The design for the long-running search service is approved but **not built**: `docs/superpowers/specs/2026-06-01-continuous-search-service-design.md` + plan in `docs/superpowers/plans/`. |
+| Dependencies | `requirements.txt` (pinned, now incl. `flask`, `mcp`) + `requirements-dev.txt`; `eval/requirements-eval.txt` points to the root file. Local `.venv/` gitignored. |
+| CI | GitHub Actions: ruff + py_compile + pytest (+ `requests`, so the MCP shim tests run). Heavy tests skip without the ML stack. |
+| Docs | `README.md` is current (service + MCP usage). The 2026-06-01 service design is **implemented** (status noted in the spec). |
 
 ## Key documents (read these first)
 
@@ -67,15 +69,14 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge PR #1** (Phase 0 + refactoring + docs):
-   https://github.com/olehserv/semantic-search/pull/1
-2. **Phase 1.1** — rewrite `mcp_server.py` with the official `mcp` SDK
-   (FastMCP, stdio); replace `mcp.json` with a correct `.mcp.json`; test from
-   Claude Code.
-3. **Phase 1.2** — build the long-running search service (the plan in
-   `docs/superpowers/plans/` is the work order).
-4. Then Phase 2 (RRF fusion, code-aware chunking, golden set → 30–50
-   questions), with recorded eval baselines.
+1. **Review + merge PR #2** (Phase 1):
+   https://github.com/olehserv/semantic-search/pull/2
+2. **Verify the container** on a machine with the docker compose plugin:
+   `cd scripts && docker compose up -d --build search-service`, then the
+   checklist in the old work order (Task 9).
+3. **Phase 2** (eval-gated): record baselines, then RRF fusion (2.1), cut
+   after scoring (2.2), configurable query variants (2.3), code-aware
+   chunking (2.4), golden set → 30–50 questions (2.5).
 
 ## How to verify the project right now
 
@@ -87,6 +88,13 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-12 (Phase 1)** — Real MCP server (FastMCP/stdio) + long-running
+  Flask search service built on branch `phase-1-search-service`. BM25 now
+  rebuilt in memory from Qdrant; `bm25.pkl` and the legacy `mcp.json` are
+  gone. Verified: 43 unit tests green, eval still 1.000 on all metrics,
+  service answers in 0.10–0.65 s warm, MCP e2e (initialize / tools/list /
+  tools/call + service-down error) passes. Docker files written; container
+  verification deferred (no compose plugin here).
 - **2026-06-11 (docs language)** — All documentation rewritten in plain
   English (B2 level) at Oleh's request. Same content, simpler sentences.
 - **2026-06-11 (refactor + docs)** — Pure scoring math extracted to

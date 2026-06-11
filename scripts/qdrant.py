@@ -3,8 +3,8 @@ import subprocess
 import time
 import os
 
-QDRANT_HOST = "localhost"
-QDRANT_PORT = 6333
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 
 COLLECTION_NAME = "demo"
 
@@ -25,6 +25,20 @@ def get_qdrant_client():
 def ensure_qdrant():
     if get_qdrant_client() is not None:
         return
+
+    # Inside a container (QDRANT_AUTOSTART=0) we cannot run docker — just wait
+    # for the Qdrant service (started via compose depends_on) to become
+    # reachable.
+    if os.getenv("QDRANT_AUTOSTART", "1") != "1":
+        for _ in range(30):
+            if get_qdrant_client() is not None:
+                print("✅ Qdrant is ready")
+                return
+            time.sleep(1)
+        raise RuntimeError(
+            f"❌ Qdrant not reachable at {QDRANT_HOST}:{QDRANT_PORT} "
+            "(QDRANT_AUTOSTART=0, so no container was started)"
+        )
 
     print("🚀 Starting Qdrant container...")
 

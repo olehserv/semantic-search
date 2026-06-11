@@ -1,7 +1,10 @@
 # Continuous Search Service — Design
 
 **Date:** 2026-06-01
-**Status:** Approved (pending spec review)
+**Status:** ✅ Implemented 2026-06-12 (branch `phase-1-search-service`), with
+one change: `mcp_server.py` became a real MCP server (official `mcp` SDK,
+FastMCP/stdio) instead of keeping the line protocol. Container verification
+deferred (dev machine has no compose plugin).
 
 ## Context
 
