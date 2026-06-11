@@ -3,8 +3,8 @@
 > Living document. Update the **Status log** and **Next actions** at the end of
 > every working session so anyone (human or agent) can pick the project up cold.
 
-**Last updated:** 2026-06-11 (Phase 0 complete)
-**Repo state:** branch `phase-0-fixes` (6 commits ahead of `main`), clean tree.
+**Last updated:** 2026-06-11 (Phase 0 + refactor + docs pass complete)
+**Repo state:** branch `phase-0-fixes`, clean tree.
 Awaiting decision: merge to `main` or open a PR.
 
 ---
@@ -21,10 +21,10 @@ Code) as an MCP tool. See `README.md` for usage.
 | Area | State |
 |------|-------|
 | Indexing (`scripts/build_index.py`) | Works. `--force` flag for non-interactive rebuilds (Phase 0.4). Still destructive (deletes collection first), no incremental mode. |
-| Retrieval (`scripts/query_index.py`) | Works after a build. Pre-build queries now fail with an actionable error instead of poisoning `bm25.pkl` (C2 fixed, Phase 0.2, regression-tested). Fusion math still flawed (min-max over mixed scales); candidates truncated before re-rank — Phase 2. |
+| Retrieval (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. Pre-build queries now fail with an actionable error instead of poisoning `bm25.pkl` (C2 fixed, Phase 0.2, regression-tested). Fusion/scoring math extracted to `ranking.py` (pure numpy, 10 unit tests pin current behavior). Fusion still min-max over mixed scales; candidates truncated before re-rank — Phase 2. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, brittle retry heuristic. |
 | Agent integration (`scripts/mcp_server.py`, `mcp.json`) | **Still does not work with real MCP clients** — custom line protocol, not JSON-RPC/MCP; cold subprocess per query (now via `sys.executable` + `__file__`-relative path, Phase 0.3). Full fix is Phase 1. |
-| Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 22 passing unit tests (`.venv/bin/python -m pytest tests/ -q`; 5 skip without the ML stack), end-to-end demo (`bash eval/run_demo.sh`). Only 8 toy golden queries so far. |
+| Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 34 passing unit tests (`.venv/bin/python -m pytest tests/ -q`; ML-stack/numpy tests skip on bare interpreters), end-to-end demo (`bash eval/run_demo.sh`). Demo verified 2026-06-11: 1.000 across all metrics on the 8 toy golden queries. |
 | Dependencies | `requirements.txt` (pinned) + `requirements-dev.txt` at root; `eval/requirements-eval.txt` includes the root manifest (Phase 0.1). `.venv/` exists locally (5.2 GB, gitignored). |
 | CI | GitHub Actions (`.github/workflows/ci.yml`): ruff + py_compile + pytest, no ML stack (heavy tests self-skip). Phase 0.5. |
 | Docs | `README.md` solid. **Approved but UNIMPLEMENTED design** for a continuous search service: `docs/superpowers/specs/2026-06-01-continuous-search-service-design.md` + step-by-step plan in `docs/superpowers/plans/`. Several files reference a `TODO.md` that no longer exists. |
@@ -80,6 +80,14 @@ bash eval/run_demo.sh                 # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-11 (refactor + docs)** — Extracted pure fusion math to
+  `scripts/ranking.py` with 10 behavior-pinning tests (34 total, green);
+  PEP8/cleanups in `qdrant.py` incl. an actionable error when docker compose
+  is missing. Verified behavior-preserving via the e2e demo (all metrics
+  1.000, unchanged). Docs refreshed: README rewritten (CUDA no longer claimed
+  required, `ranking.py` + `--force` + manual-Qdrant fallback documented),
+  eval README tightened, plan/review marked with Phase 0 status. Note: this
+  machine lacks docker compose — Qdrant was started with plain `docker run`.
 - **2026-06-11 (later)** — Phase 0 executed on branch `phase-0-fixes` (Claude):
   0.1 pinned manifests, 0.2 C2 fix + 5 regression tests, 0.3 robust subprocess
   invocation, 0.4 `--force` flag, 0.5 CI workflow + lint cleanup, 0.6 doc

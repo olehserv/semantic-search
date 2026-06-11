@@ -1,6 +1,8 @@
 # Production-Readiness Plan — Semantic Code Search
 
 **Date:** 2026-06-11
+**Status:** Phase 0 ✅ complete (branch `phase-0-fixes`, 2026-06-11) — including
+the optional 0.3. Phases 1–3 open. Current state lives in `/handoff.md`.
 **Input:** `2026-06-11-architecture-review.md` (same directory) — finding IDs
 (C1…C4, H1…H7, M1…M11) refer to that document.
 **Principle:** every retrieval-quality change must be validated by the eval

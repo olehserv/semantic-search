@@ -1,115 +1,69 @@
 # Semantic Code Search
 
-A hybrid semantic + keyword search tool for a code base, exposed to an AI agent
-(e.g. Claude Code) over MCP. It indexes a .NET project's source files into a
-[Qdrant](https://qdrant.tech/) vector database and answers natural-language
-questions about the code by combining vector search, BM25 keyword search, and a
-local LLM.
+Hybrid semantic + keyword search over a .NET codebase, exposed to an AI agent
+(e.g. Claude Code). Source files are indexed into a [Qdrant](https://qdrant.tech/)
+vector database; natural-language questions are answered by combining vector
+search, BM25 keyword search, and (optionally) a local LLM.
 
 ## How it works
 
-The pipeline has three stages:
-
-1. **Index** (`build_index.py`) — reads source files (`.cs`, `.csproj`, `.slnx`),
-   splits them into overlapping chunks, embeds each chunk with a local
-   HuggingFace model, and stores the vectors in Qdrant. It also writes the chunk
-   nodes to `./.claude/cache/bm25.pkl` so keyword search has data to work with.
-
-2. **Retrieve + rank** (`query_index.py`) — for a query it runs **hybrid
-   retrieval**:
-   - dense vector search (semantic similarity),
-   - BM25 keyword search,
-   - a wider vector pass,
-   then deduplicates, re-embeds candidates, and re-ranks them with a weighted
-   score (embedding similarity + retriever score + frequency boost). Returns the
-   top code snippets as JSON.
-
-3. **Answer** (`ask.py`) — feeds the retrieved snippets to a local LLM (Ollama)
-   with a prompt tuned for a senior .NET engineer, and returns a written answer.
-   It auto-detects the question mode (locate / flow / debug / explain) and
+1. **Index** (`build_index.py`) — reads `.cs`/`.csproj`/`.sln`/`.slnx` files,
+   splits them into overlapping chunks, embeds them with a local HuggingFace
+   model, stores the vectors in Qdrant, and writes the chunk nodes to
+   `./.claude/cache/bm25.pkl` for keyword search.
+2. **Retrieve + rank** (`query_index.py`) — runs dense (top-6), BM25, and wide
+   dense (top-12) retrieval over three query variants, deduplicates, re-embeds
+   the candidates, and re-ranks them with a weighted score (`ranking.py`).
+   Prints clean JSON on stdout; all diagnostics go to stderr.
+3. **Answer** (`ask.py`) — feeds the top snippets to a local LLM (Ollama),
+   auto-detecting the question mode (locate / flow / debug / explain), and
    retries with more context if the first answer is insufficient.
 
-`mcp_server.py` wraps stage 2 as an MCP tool (`search_codebase`) so an agent can
-call it over stdin/stdout.
-
-### Components
+`mcp_server.py` wraps stage 2 for agents over stdin/stdout. *Note: it speaks a
+custom line protocol, not yet the real MCP standard — replacing it with an
+official MCP server is Phase 1 of `docs/reviews/2026-06-11-production-readiness-plan.md`.*
 
 | File | Role |
 |------|------|
-| `build_index.py` | Build/rebuild the Qdrant index from source files |
-| `query_index.py` | Hybrid retrieval + re-ranking; CLI prints JSON results |
-| `ask.py` | LLM-backed natural-language answers over the retrieved code |
-| `mcp_server.py` | MCP server exposing `search_codebase` to an agent |
-| `qdrant.py` | Qdrant connection + Docker container lifecycle |
-| `model_setup.py` | Configures the embedding model and the LLM |
-| `docker-compose.yml` | Qdrant service definition |
+| `scripts/build_index.py` | Build/rebuild the Qdrant index (`--force` skips the replace prompt) |
+| `scripts/query_index.py` | Hybrid retrieval + re-ranking; CLI prints JSON |
+| `scripts/ranking.py` | Pure fusion/scoring math (numpy only, unit-tested) |
+| `scripts/ask.py` | LLM-backed answers over the retrieved code |
+| `scripts/mcp_server.py` | stdin/stdout search wrapper for agents |
+| `scripts/qdrant.py` | Qdrant connection + container lifecycle |
+| `scripts/model_setup.py` | Embedding model + LLM configuration |
+| `eval/` | Retrieval-quality eval harness (see `eval/README.md`) |
 
 ## Requirements
 
-- **Python 3.11+**
-- **Docker** (for the Qdrant container; started automatically)
-- **A CUDA GPU** — embeddings run on `cuda` (`model_setup.py`). Change `device`
-  there if you need CPU.
-- **[Ollama](https://ollama.com/)** running locally with a model pulled
-  (default `llama3`; configurable via `LLM_MODEL` in `model_setup.py`).
-
-### Python dependencies
-
-```bash
-pip install -r requirements.txt        # runtime (pinned)
-pip install -r requirements-dev.txt    # + pytest/ruff for development
-```
-
-## Layout / deployment
-
-The scripts are meant to live in your target project under `.claude/scripts/`
-and run with the **current working directory set to that project's root**. Paths
-are resolved relative to CWD:
-
-- caches: `./.claude/cache/embeddings.pkl`, `./.claude/cache/bm25.pkl`
-- source files indexed from: `./` (recursively)
-- `mcp.json` invokes `python .claude/scripts/mcp_server.py`
-
-The collection name and Qdrant host/port are set in `qdrant.py`
-(`COLLECTION_NAME`, `QDRANT_HOST`, `QDRANT_PORT`).
+- **Python 3.11+** — `pip install -r requirements.txt`
+  (`requirements-dev.txt` adds pytest/ruff)
+- **Docker** — Qdrant is auto-started via `docker compose`. Without the compose
+  plugin, start it manually:
+  `docker run -d --name qdrant-local -p 6333:6333 -v qdrant_storage:/qdrant/storage qdrant/qdrant`
+- **GPU optional** — embeddings use CUDA when available, otherwise CPU
+  (auto-detected in `model_setup.py`)
+- **[Ollama](https://ollama.com/)** with a pulled model (default `llama3`) —
+  only needed for `ask.py`
 
 ## Usage
 
-All commands run from your **project root** (where the `.cs` files live).
-
-### 1. Build the index
-
-```bash
-python .claude/scripts/build_index.py
-```
-
-This starts Qdrant if needed, reads your source files, embeds them, and stores
-them in Qdrant. If the collection already exists it asks before replacing it.
-Re-run this whenever the code changes (and to enable BM25 — see Notes).
-
-### 2. Query (raw JSON results)
+The scripts are meant to live in your target project under `.claude/scripts/`
+and run from that **project's root** (paths like `./.claude/cache/...` resolve
+relative to the current directory).
 
 ```bash
+# 1. Build the index (re-run whenever the code changes)
+python .claude/scripts/build_index.py            # add --force to skip the prompt
+
+# 2. Query — raw ranked JSON on stdout
 python .claude/scripts/query_index.py "where is authentication handled"
-```
 
-Prints a JSON object with the answer summary, source files, and ranked code
-snippets. Diagnostic logs go to **stderr**, so stdout is clean JSON.
-
-### 3. Ask (LLM answer)
-
-```bash
+# 3. Ask — LLM answer grounded in the retrieved code (needs Ollama)
 python .claude/scripts/ask.py "how does the request pipeline work"
 ```
 
-Requires Ollama running. Returns a written explanation grounded in the retrieved
-code.
-
-### 4. Use from an agent (MCP)
-
-`mcp.json` registers a `code-search` server. Once configured, the agent can call
-the `search_codebase` tool, which runs `query_index.py` and returns structured
-results. The server reads one JSON request per line on stdin, e.g.:
+Agents send one JSON request per line to `mcp_server.py`:
 
 ```json
 {"tool": "search_codebase", "input": {"query": "where is the DB context configured"}}
@@ -119,21 +73,18 @@ results. The server reads one JSON request per line on stdin, e.g.:
 
 | Setting | Location |
 |---------|----------|
-| Embedding model / device | `model_setup.py` (`HuggingFaceEmbedding`) |
-| LLM model (Ollama) | `model_setup.py` (`LLM_MODEL`) |
-| Qdrant host / port / collection | `qdrant.py` |
+| Embedding model / device, LLM model | `model_setup.py` |
+| Qdrant host / port / collection name | `qdrant.py` |
 | Indexed file types / excludes | `build_index.py` (`load_documents`) |
 | Chunk size / overlap | `build_index.py` (`SentenceSplitter`) |
-| Retrieval depth / score weights | `query_index.py` (`query()` args, `build_query_engine`) |
+| Retrieval depth, fusion weights, query expansion | `query_index.py` / `ranking.py` |
 
 ## Notes
 
-- **BM25 requires a (re)build.** The index is loaded from the Qdrant vector
-  store, which leaves the in-memory document store empty. `build_index.py`
-  persists the chunk nodes to `bm25.pkl` for keyword search — until a build has
-  written that cache, queries fail with an error telling you to run
-  `build_index.py`.
+- **BM25 needs a build.** Until `build_index.py` has written
+  `./.claude/cache/bm25.pkl`, queries fail with an error telling you to run it.
 - **Embedding cache.** Query-time embeddings are cached in
-  `./.claude/cache/embeddings.pkl` to speed up repeated runs.
-- **GPU / Ollama assumptions.** Embeddings default to CUDA and answers default to
-  a local Ollama server; adjust `model_setup.py` for other setups.
+  `./.claude/cache/embeddings.pkl`. Delete it if you switch embedding models —
+  cached vectors are not invalidated automatically.
+- **Project status.** Senior review, known issues, and the roadmap live in
+  `docs/reviews/`; session-to-session state is tracked in `handoff.md`.

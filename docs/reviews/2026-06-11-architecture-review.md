@@ -3,6 +3,8 @@
 **Date:** 2026-06-11
 **Reviewer:** Claude (senior AI architect/developer review, requested by Oleh)
 **Scope:** full repository at commit `b4c8540` ("add evaluation")
+**Follow-up:** C2/C4/H4/M5/M9 fixed and M11 largely addressed by the Phase 0
+work on branch `phase-0-fixes` (same day); see `/handoff.md` for live status.
 **Verdict:** Solid prototype with a genuinely good evaluation harness, but **not
 production-ready**. The headline feature (agent integration over MCP) does not
 work with real MCP clients, one confirmed crash-and-poison bug breaks first-run
