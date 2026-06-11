@@ -1,47 +1,75 @@
-import subprocess
-import json
+"""Real MCP server (stdio): exposes `search_codebase` to MCP clients.
+
+This is a thin shim. It imports NO ML stack — only `requests` at module
+level, and the `mcp` SDK lazily inside build_server(). The heavy search
+engine lives in the long-running service (scripts/service.py); start it
+first:
+
+    .venv/bin/python scripts/service.py
+
+stdout belongs to the MCP protocol — never print() in this module; any
+diagnostics must go to stderr.
+"""
 import os
-import sys
 
-# Resolve query_index.py next to this file, and run it with the same
-# interpreter — "python" may not exist on PATH (or point outside the venv),
-# and the old CWD-relative ".claude/scripts/..." path only worked when
-# deployed under exactly that directory.
-QUERY_INDEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "query_index.py")
+import requests
 
-def search_code(query):
-    result = subprocess.run(
-        [sys.executable, QUERY_INDEX, query],
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        return {"error": "query_index failed", "stderr": result.stderr}
+SEARCH_SERVICE_URL = os.getenv("SEARCH_SERVICE_URL", "http://localhost:8000")
+TIMEOUT_SECONDS = float(os.getenv("SEARCH_SERVICE_TIMEOUT", "120"))
+
+
+def search_code(query: str) -> dict:
+    """Forward one query to the search service.
+
+    Never raises: every failure mode comes back as a structured
+    {"error": ...} dict, which gives the model more to work with than an
+    exception frame.
+    """
     try:
-        return json.loads(result.stdout)
-    except json.JSONDecodeError:
-        return {"error": "invalid JSON from query_index", "stdout": result.stdout}
+        resp = requests.post(
+            f"{SEARCH_SERVICE_URL}/search",
+            json={"query": query},
+            timeout=TIMEOUT_SECONDS,
+        )
+    except requests.RequestException as exc:
+        return {
+            "error": f"search service unreachable at {SEARCH_SERVICE_URL}: {exc}",
+            "hint": "Start it with: .venv/bin/python scripts/service.py "
+                    "(or check SEARCH_SERVICE_URL).",
+        }
+    if resp.status_code != 200:
+        return {"error": f"search service returned {resp.status_code}: {resp.text[:500]}"}
+    try:
+        return resp.json()
+    except ValueError:
+        return {
+            "error": "search service returned invalid JSON",
+            "body": resp.text[:500],
+        }
 
-def main():
-    while True:
-        try:
-            line = input()
-        except EOFError:
-            break
 
-        try:
-            request = json.loads(line)
-        except json.JSONDecodeError:
-            print(json.dumps({"error": "invalid JSON request"}), flush=True)
-            continue
+def build_server():
+    """Construct the FastMCP server. Separate from main() so tests can check
+    the tool registration without running the stdio loop."""
+    from mcp.server.fastmcp import FastMCP  # deferred: keeps bare import light
 
-        if request.get("tool") == "search_codebase":
-            query = request["input"]["query"]
-            response = {"output": search_code(query)}
-        else:
-            response = {"error": f"unknown tool: {request.get('tool')}"}
+    server = FastMCP("code-search")
 
-        print(json.dumps(response), flush=True)
+    @server.tool()
+    def search_codebase(query: str) -> dict:
+        """Hybrid semantic + keyword search over the indexed codebase.
+
+        Returns ranked source files and code snippets for a natural-language
+        question about the code (e.g. "where is authentication handled").
+        """
+        return search_code(query)
+
+    return server
+
+
+def main() -> None:
+    build_server().run()  # stdio transport is the default
+
 
 if __name__ == "__main__":
     main()
