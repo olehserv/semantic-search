@@ -1,5 +1,7 @@
 from llama_index.core import Settings
 from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.schema import TextNode
+from llama_index.core.vector_stores.utils import metadata_dict_to_node
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.core import VectorStoreIndex
@@ -25,49 +27,64 @@ import qdrant  # noqa: E402
 from ranking import expand_query, score_candidates  # noqa: E402
 
 EMB_CACHE_PATH = "./.claude/cache/embeddings.pkl"
-BM25_CACHE_PATH = "./.claude/cache/bm25.pkl"
 
 _embedding_cache = {}
-bm25_retriever_nodes_cache = None
 
 print(f"[DEBUG] [{datetime.now()}] BEGIN query_index")
 
 def cache_warmup():
-    global _embedding_cache, bm25_retriever_nodes_cache
+    global _embedding_cache
     if os.path.exists(EMB_CACHE_PATH):
         with open(EMB_CACHE_PATH, "rb") as f:
             print("[DEBUG] Loading EMB cache ...")
+            # pickle is acceptable here: the file is local, written only by
+            # this code. Replacing it (model-keyed, no pickle) is plan
+            # item 3.2 — the approved Phase 1 design keeps it as-is.
             _embedding_cache = pickle.load(f)
             print(f"[DEBUG] EMB cache size: {len(_embedding_cache)}")
-    
-    if os.path.exists(BM25_CACHE_PATH):
-        with open(BM25_CACHE_PATH, "rb") as f:
-            print("[DEBUG] Loading BM25 nodes cache ...")
-            bm25_retriever_nodes_cache = pickle.load(f)
-            print(f"[DEBUG] BM25 nodes cache size: {len(bm25_retriever_nodes_cache)}")
 
 
 cache_warmup()
 
+def load_all_nodes(client, collection_name):
+    """Rebuild all nodes from the Qdrant collection (keeps the node IDs, so
+    deduplication against the vector retriever still works)."""
+    nodes = []
+    offset = None
+    while True:
+        points, offset = client.scroll(
+            collection_name=collection_name,
+            with_payload=True,
+            with_vectors=False,
+            limit=256,
+            offset=offset,
+        )
+        for p in points:
+            payload = p.payload or {}
+            try:
+                node = metadata_dict_to_node(payload, text=payload.get("text"))
+            except Exception:
+                node = TextNode(id_=str(p.id), text=payload.get("text", ""))
+            nodes.append(node)
+        if offset is None:
+            break
+    return nodes
+
+
 def get_bm25_retriever(index):
-    global bm25_retriever_nodes_cache
-    # Treat an empty list the same as no cache: a pre-fix bm25.pkl may contain
-    # [] (the old code persisted before validating), and an index loaded from
-    # the Qdrant vector store always has an empty docstore.
-    if not bm25_retriever_nodes_cache:
-        nodes = list(index.docstore.docs.values())
-        if not nodes:
-            raise RuntimeError(
-                "No nodes available for BM25 keyword search: the index was "
-                "loaded from Qdrant (empty docstore) and no BM25 node cache "
-                f"exists at {BM25_CACHE_PATH}. Run build_index.py first."
-            )
-        bm25_retriever_nodes_cache = nodes
-
-        with open(BM25_CACHE_PATH, "wb") as f:
-            pickle.dump(bm25_retriever_nodes_cache, f)
-
-    return BM25Retriever.from_defaults(nodes=bm25_retriever_nodes_cache)
+    # BM25 is in-memory only: rebuild it from the nodes stored in Qdrant each
+    # time the engine is built (once per long-lived process).
+    client = qdrant.get_qdrant_client()
+    nodes = load_all_nodes(client, qdrant.COLLECTION_NAME)
+    print(f"[DEBUG] BM25 nodes loaded from Qdrant: {len(nodes)}")
+    if not nodes:
+        # Lesson from review finding C2: an empty node list must fail with a
+        # clear action, not BM25Retriever's opaque ValueError.
+        raise RuntimeError(
+            f"No nodes found in Qdrant collection '{qdrant.COLLECTION_NAME}' "
+            "for BM25 keyword search. Run build_index.py first."
+        )
+    return BM25Retriever.from_defaults(nodes=nodes)
 
 
 def load_index():
