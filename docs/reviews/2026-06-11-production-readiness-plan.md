@@ -1,8 +1,10 @@
 # Production-Readiness Plan — Semantic Code Search
 
 **Date:** 2026-06-11
-**Status:** Phase 0 ✅ done (branch `phase-0-fixes`, 2026-06-11), including the
-optional task 0.3. Phases 1–3 are open. Live status is in `/handoff.md`.
+**Status:** Phase 0 ✅ done (2026-06-11, merged). Phase 1 ✅ done
+(branch `phase-1-search-service`, 2026-06-12) — container verification is the
+only deferred part (no compose plugin on the dev machine). Phases 2–3 are
+open. Live status is in `/handoff.md`.
 **Input:** `2026-06-11-architecture-review.md` (same directory) — the IDs
 (C1…C4, H1…H7, M1…M11) point to findings in that document.
 **Main rule:** every change to search quality must be checked with the eval
