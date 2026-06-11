@@ -5,8 +5,9 @@
 > without extra context.
 
 **Last updated:** 2026-06-12 (Phase 1 done)
-**Repo state:** branch `phase-1-search-service` (PR to `main` pending).
-PR #1 (Phase 0) is merged.
+**Repo state:** branch `phase-1-search-service`, pushed; PR open against
+`main`: https://github.com/olehserv/semantic-search/pull/2
+(PR #1 / Phase 0 is merged.)
 
 ---
 
@@ -68,7 +69,8 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge the Phase 1 PR** (branch `phase-1-search-service`).
+1. **Review + merge PR #2** (Phase 1):
+   https://github.com/olehserv/semantic-search/pull/2
 2. **Verify the container** on a machine with the docker compose plugin:
    `cd scripts && docker compose up -d --build search-service`, then the
    checklist in the old work order (Task 9).
