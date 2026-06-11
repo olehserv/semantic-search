@@ -1,51 +1,52 @@
-# Retrieval Evaluation Harness
+# Search Quality Evaluation
 
-The measurement gate for the search system: **a retrieval change is an
-improvement only if these metrics say so.** Every Phase 2 item in
-`docs/reviews/2026-06-11-production-readiness-plan.md` (RRF fusion, code-aware
-chunking, re-ranker, …) gets validated here before merging.
+This folder measures how good the search is. The rule for the project:
+**a search change is an improvement only if these numbers get better.**
+Every Phase 2 task in `docs/reviews/2026-06-11-production-readiness-plan.md`
+(RRF fusion, code-aware chunking, re-ranker, …) must be checked here before
+it is merged.
 
-For each query in a labelled golden set, the harness runs the real `query()`
-pipeline and compares the **files** the retrieved chunks came from against the
-known-correct files:
+How it works: for every question in a labelled "golden set", the harness runs
+the real `query()` pipeline. It looks at which **files** the results came
+from, and compares them with the files that are known to be correct.
 
-| Metric | Question it answers |
-|--------|---------------------|
-| **Recall@k** | Of the files that should be found, what fraction landed in the top-k? |
-| **MRR** | How high up is the first correct file? (1.0 = always rank 1) |
-| **nDCG@k** | Are correct files ranked near the top, with diminishing credit lower down? |
+| Metric | What it tells you |
+|--------|-------------------|
+| **Recall@k** | Of the correct files, how many are in the top-k results? |
+| **MRR** | How high is the first correct file? (1.0 = always at rank 1) |
+| **nDCG@k** | Are the correct files near the top? Lower positions get less credit. |
 
 | File | Role |
 |------|------|
-| `metrics.py` | Pure metric functions (stdlib only, unit-tested) |
-| `run_eval.py` | Runs `query()` per golden entry, prints/writes the report |
-| `golden.jsonl` | Labelled set: one `{"query", "relevant_files"}` per line |
-| `sample_corpus/` | Tiny throwaway .NET app so the demo runs self-contained |
+| `metrics.py` | The metric functions (only stdlib, unit-tested) |
+| `run_eval.py` | Runs `query()` for every golden question and prints the report |
+| `golden.jsonl` | The labelled set: one `{"query", "relevant_files"}` per line |
+| `sample_corpus/` | A small fake .NET app, so the demo works alone |
 | `run_demo.sh` | One command: venv + Qdrant + index the corpus + run the eval |
 
 ## Run it
 
 ```bash
-bash eval/run_demo.sh            # end-to-end demo on the sample corpus
-python3 -m pytest tests/ -q     # unit tests (no Docker/ML stack needed)
+bash eval/run_demo.sh            # full demo on the sample corpus
+python3 -m pytest tests/ -q     # unit tests (no Docker or ML stack needed)
 ```
 
-**Warning:** the demo (re)builds the Qdrant collection named in
-`scripts/qdrant.py` (`COLLECTION_NAME`) — it will replace a real index that
-uses the same name.
+**Warning:** the demo rebuilds the Qdrant collection named in
+`scripts/qdrant.py` (`COLLECTION_NAME`). If your real index uses the same
+name, the demo will replace it.
 
-## Use it on your project
+## Use it on your own project
 
 1. Index your codebase (see the top-level README).
-2. Replace `golden.jsonl` with **30–50** queries reflecting how people actually
-   ask about your code, each labelled with the file(s) that answer it. Mix
-   "where is X", "how does Y work", identifier lookups, and conceptual
-   questions. Label quality beats quantity.
+2. Replace `golden.jsonl` with **30–50** questions that people really ask
+   about your code. For each question, write the file(s) that answer it.
+   Mix different types: "where is X", "how does Y work", exact name lookups,
+   and concept questions. Good labels matter more than many labels.
 3. ```bash
    PYTHONPATH=scripts:eval python eval/run_eval.py --golden eval/golden.jsonl --k 5 --out report.json
    ```
-4. Record the numbers. Make **one** retrieval change. Re-run. Keep what moves
-   the metrics up.
+4. Write down the numbers. Change **one** thing in the search. Run again.
+   Keep the change only if the numbers go up.
 
 ### Golden file format
 
@@ -54,4 +55,5 @@ uses the same name.
 {"query": "what happens when an order is placed", "relevant_files": ["OrdersController.cs", "EmailService.cs"]}
 ```
 
-`relevant_files` are file *names* (basenames); a query may have several.
+`relevant_files` are file *names* (without the path). One question can have
+several correct files.
