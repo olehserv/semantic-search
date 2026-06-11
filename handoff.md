@@ -4,8 +4,8 @@
 > every working session so anyone (human or agent) can pick the project up cold.
 
 **Last updated:** 2026-06-11 (Phase 0 + refactor + docs pass complete)
-**Repo state:** branch `phase-0-fixes`, clean tree.
-Awaiting decision: merge to `main` or open a PR.
+**Repo state:** branch `phase-0-fixes`, pushed; PR open against `main`:
+https://github.com/olehserv/semantic-search/pull/1
 
 ---
 
@@ -61,7 +61,8 @@ Code) as an MCP tool. See `README.md` for usage.
 
 ## Next actions (in order — from the production-readiness plan)
 
-1. **Merge/PR the `phase-0-fixes` branch** (Phase 0 is complete on it).
+1. **Review + merge PR #1** (Phase 0 + refactor + docs):
+   https://github.com/olehserv/semantic-search/pull/1
 2. **Phase 1.1** — rewrite `mcp_server.py` on the official `mcp` SDK
    (FastMCP, stdio); replace `mcp.json` with a proper `.mcp.json`; verify from
    Claude Code.
