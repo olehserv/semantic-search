@@ -1,0 +1,1238 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string" />
+                            <xsd:attribute name="type" type="xsd:string" />
+                            <xsd:attribute name="mimetype" type="xsd:string" />
+                            <xsd:attribute ref="xml:space" />
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string" />
+                            <xsd:attribute name="name" type="xsd:string" />
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+                            <xsd:attribute ref="xml:space" />
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" />
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    
+    
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+
+    <data name="1" xml:space="preserve">
+        <value>Київ</value>
+    </data>
+    <data name="2" xml:space="preserve">
+        <value>Харків</value>
+    </data>
+    <data name="3" xml:space="preserve">
+        <value>Дніпро</value>
+    </data>
+    <data name="4" xml:space="preserve">
+        <value>Одеса</value>
+    </data>
+    <data name="5" xml:space="preserve">
+        <value>Львів</value>
+    </data>
+    <data name="6" xml:space="preserve">
+        <value>Авдіївка</value>
+    </data>
+    <data name="7" xml:space="preserve">
+        <value>Аккерман</value>
+    </data>
+    <data name="8" xml:space="preserve">
+        <value>Ананьїв</value>
+    </data>
+    <data name="9" xml:space="preserve">
+        <value>Арбузинка</value>
+    </data>
+    <data name="10" xml:space="preserve">
+        <value>Арциз</value>
+    </data>
+    <data name="11" xml:space="preserve">
+        <value>Асканія-Нова</value>
+    </data>
+    <data name="12" xml:space="preserve">
+        <value>Балаклія</value>
+    </data>
+    <data name="13" xml:space="preserve">
+        <value>Балта</value>
+    </data>
+    <data name="14" xml:space="preserve">
+        <value>Бар</value>
+    </data>
+    <data name="15" xml:space="preserve">
+        <value>Барвінкове</value>
+    </data>
+    <data name="16" xml:space="preserve">
+        <value>Баришівка</value>
+    </data>
+    <data name="17" xml:space="preserve">
+        <value>Бахмач</value>
+    </data>
+    <data name="18" xml:space="preserve">
+        <value>Бахмут</value>
+    </data>
+    <data name="19" xml:space="preserve">
+        <value>Баштанка</value>
+    </data>
+    <data name="20" xml:space="preserve">
+        <value>Белз</value>
+    </data>
+    <data name="21" xml:space="preserve">
+        <value>Бердичів</value>
+    </data>
+    <data name="22" xml:space="preserve">
+        <value>Бердянськ</value>
+    </data>
+    <data name="23" xml:space="preserve">
+        <value>Берегомет</value>
+    </data>
+    <data name="24" xml:space="preserve">
+        <value>Бережани</value>
+    </data>
+    <data name="25" xml:space="preserve">
+        <value>Березівка</value>
+    </data>
+    <data name="26" xml:space="preserve">
+        <value>Берислав</value>
+    </data>
+    <data name="27" xml:space="preserve">
+        <value>Бершадь</value>
+    </data>
+    <data name="28" xml:space="preserve">
+        <value>Бібрка</value>
+    </data>
+    <data name="29" xml:space="preserve">
+        <value>Біла Церква</value>
+    </data>
+    <data name="30" xml:space="preserve">
+        <value>Білгород-Дністровський</value>
+    </data>
+    <data name="31" xml:space="preserve">
+        <value>Білики</value>
+    </data>
+    <data name="32" xml:space="preserve">
+        <value>Білозерка</value>
+    </data>
+    <data name="33" xml:space="preserve">
+        <value>Більшівці</value>
+    </data>
+    <data name="34" xml:space="preserve">
+        <value>Біляївка</value>
+    </data>
+    <data name="35" xml:space="preserve">
+        <value>Благодатне</value>
+    </data>
+    <data name="36" xml:space="preserve">
+        <value>Близнюки</value>
+    </data>
+    <data name="37" xml:space="preserve">
+        <value>Богодухів</value>
+    </data>
+    <data name="38" xml:space="preserve">
+        <value>Богородчани</value>
+    </data>
+    <data name="39" xml:space="preserve">
+        <value>Болехів</value>
+    </data>
+    <data name="40" xml:space="preserve">
+        <value>Борислав</value>
+    </data>
+    <data name="41" xml:space="preserve">
+        <value>Бориспіль</value>
+    </data>
+    <data name="42" xml:space="preserve">
+        <value>Борова</value>
+    </data>
+    <data name="43" xml:space="preserve">
+        <value>Боярка</value>
+    </data>
+    <data name="44" xml:space="preserve">
+        <value>Брагинівка</value>
+    </data>
+    <data name="45" xml:space="preserve">
+        <value>Браїлів</value>
+    </data>
+    <data name="46" xml:space="preserve">
+        <value>Братське</value>
+    </data>
+    <data name="47" xml:space="preserve">
+        <value>Бровари</value>
+    </data>
+    <data name="48" xml:space="preserve">
+        <value>Броди</value>
+    </data>
+    <data name="49" xml:space="preserve">
+        <value>Брошнів-Осада</value>
+    </data>
+    <data name="50" xml:space="preserve">
+        <value>Бурштин</value>
+    </data>
+    <data name="51" xml:space="preserve">
+        <value>Буськ</value>
+    </data>
+    <data name="52" xml:space="preserve">
+        <value>Буча</value>
+    </data>
+    <data name="53" xml:space="preserve">
+        <value>Бучач</value>
+    </data>
+    <data name="54" xml:space="preserve">
+        <value>Буштино</value>
+    </data>
+    <data name="55" xml:space="preserve">
+        <value>Валки</value>
+    </data>
+    <data name="56" xml:space="preserve">
+        <value>Вапнярка</value>
+    </data>
+    <data name="57" xml:space="preserve">
+        <value>Вараш</value>
+    </data>
+    <data name="58" xml:space="preserve">
+        <value>Василівка</value>
+    </data>
+    <data name="59" xml:space="preserve">
+        <value>Васильків</value>
+    </data>
+    <data name="60" xml:space="preserve">
+        <value>Васильківка</value>
+    </data>
+    <data name="61" xml:space="preserve">
+        <value>Ватутіне</value>
+    </data>
+    <data name="62" xml:space="preserve">
+        <value>Великий Березний</value>
+    </data>
+    <data name="63" xml:space="preserve">
+        <value>Великий Бичків</value>
+    </data>
+    <data name="64" xml:space="preserve">
+        <value>Великий Бурлук</value>
+    </data>
+    <data name="65" xml:space="preserve">
+        <value>Великі Мости</value>
+    </data>
+    <data name="66" xml:space="preserve">
+        <value>Велікодолінінское</value>
+    </data>
+    <data name="67" xml:space="preserve">
+        <value>Вендичани</value>
+    </data>
+    <data name="68" xml:space="preserve">
+        <value>верхнє Синьовидне</value>
+    </data>
+    <data name="69" xml:space="preserve">
+        <value>Верхньодніпровськ</value>
+    </data>
+    <data name="70" xml:space="preserve">
+        <value>Верховина</value>
+    </data>
+    <data name="71" xml:space="preserve">
+        <value>Веселинове</value>
+    </data>
+    <data name="72" xml:space="preserve">
+        <value>Вигода</value>
+    </data>
+    <data name="73" xml:space="preserve">
+        <value>Вижниця</value>
+    </data>
+    <data name="74" xml:space="preserve">
+        <value>Винники</value>
+    </data>
+    <data name="75" xml:space="preserve">
+        <value>Виноградів</value>
+    </data>
+    <data name="76" xml:space="preserve">
+        <value>Високопілля</value>
+    </data>
+    <data name="77" xml:space="preserve">
+        <value>Вишгород</value>
+    </data>
+    <data name="78" xml:space="preserve">
+        <value>Вишневе</value>
+    </data>
+    <data name="79" xml:space="preserve">
+        <value>Вишнівець</value>
+    </data>
+    <data name="80" xml:space="preserve">
+        <value>Вінниця</value>
+    </data>
+    <data name="81" xml:space="preserve">
+        <value>Вовчанськ</value>
+    </data>
+    <data name="82" xml:space="preserve">
+        <value>Вознесенськ</value>
+    </data>
+    <data name="83" xml:space="preserve">
+        <value>Волноваха</value>
+    </data>
+    <data name="84" xml:space="preserve">
+        <value>Воловець</value>
+    </data>
+    <data name="85" xml:space="preserve">
+        <value>Володарськ-Волинський</value>
+    </data>
+    <data name="86" xml:space="preserve">
+        <value>Володимир-Волинський</value>
+    </data>
+    <data name="87" xml:space="preserve">
+        <value>Володимирець</value>
+    </data>
+    <data name="88" xml:space="preserve">
+        <value>Вороновиця</value>
+    </data>
+    <data name="89" xml:space="preserve">
+        <value>Гадяч</value>
+    </data>
+    <data name="90" xml:space="preserve">
+        <value>Гайворон</value>
+    </data>
+    <data name="91" xml:space="preserve">
+        <value>Гайсин</value>
+    </data>
+    <data name="92" xml:space="preserve">
+        <value>Галич</value>
+    </data>
+    <data name="93" xml:space="preserve">
+        <value>Гвардійське</value>
+    </data>
+    <data name="94" xml:space="preserve">
+        <value>Гвіздець</value>
+    </data>
+    <data name="95" xml:space="preserve">
+        <value>Генічеськ</value>
+    </data>
+    <data name="96" xml:space="preserve">
+        <value>Герца</value>
+    </data>
+    <data name="97" xml:space="preserve">
+        <value>Глибока</value>
+    </data>
+    <data name="98" xml:space="preserve">
+        <value>Глухів</value>
+    </data>
+    <data name="99" xml:space="preserve">
+        <value>Гнівань</value>
+    </data>
+    <data name="100" xml:space="preserve">
+        <value>Гола Пристань</value>
+    </data>
+    <data name="101" xml:space="preserve">
+        <value>Голоби</value>
+    </data>
+    <data name="102" xml:space="preserve">
+        <value>Горішні Плавні</value>
+    </data>
+    <data name="103" xml:space="preserve">
+        <value>Горностаївка</value>
+    </data>
+    <data name="104" xml:space="preserve">
+        <value>Городенка</value>
+    </data>
+    <data name="105" xml:space="preserve">
+        <value>Городище</value>
+    </data>
+    <data name="106" xml:space="preserve">
+        <value>Городниця</value>
+    </data>
+    <data name="107" xml:space="preserve">
+        <value>Городок</value>
+    </data>
+    <data name="108" xml:space="preserve">
+        <value>Горохів</value>
+    </data>
+    <data name="109" xml:space="preserve">
+        <value>Гостомель</value>
+    </data>
+    <data name="110" xml:space="preserve">
+        <value>Градизьк</value>
+    </data>
+    <data name="111" xml:space="preserve">
+        <value>Гуляйполе</value>
+    </data>
+    <data name="112" xml:space="preserve">
+        <value>Гусятин</value>
+    </data>
+    <data name="113" xml:space="preserve">
+        <value>Делятин</value>
+    </data>
+    <data name="114" xml:space="preserve">
+        <value>Демурине</value>
+    </data>
+    <data name="115" xml:space="preserve">
+        <value>Дергачі</value>
+    </data>
+    <data name="116" xml:space="preserve">
+        <value>Дзержинськ</value>
+    </data>
+    <data name="117" xml:space="preserve">
+        <value>Димитров</value>
+    </data>
+    <data name="118" xml:space="preserve">
+        <value>Добропілля</value>
+    </data>
+    <data name="119" xml:space="preserve">
+        <value>Долина</value>
+    </data>
+    <data name="120" xml:space="preserve">
+        <value>Донецьк</value>
+    </data>
+    <data name="121" xml:space="preserve">
+        <value>Дрогобич</value>
+    </data>
+    <data name="122" xml:space="preserve">
+        <value>Дружба</value>
+    </data>
+    <data name="123" xml:space="preserve">
+        <value>Дружківка</value>
+    </data>
+    <data name="124" xml:space="preserve">
+        <value>Дубно</value>
+    </data>
+    <data name="125" xml:space="preserve">
+        <value>Дунаївці</value>
+    </data>
+    <data name="126" xml:space="preserve">
+        <value>Єрки</value>
+    </data>
+    <data name="127" xml:space="preserve">
+        <value>Жидачів</value>
+    </data>
+    <data name="128" xml:space="preserve">
+        <value>Житомир</value>
+    </data>
+    <data name="129" xml:space="preserve">
+        <value>Жмеринка</value>
+    </data>
+    <data name="130" xml:space="preserve">
+        <value>Жовква</value>
+    </data>
+    <data name="131" xml:space="preserve">
+        <value>Жовті Води</value>
+    </data>
+    <data name="132" xml:space="preserve">
+        <value>Заболотів</value>
+    </data>
+    <data name="133" xml:space="preserve">
+        <value>Заболоття</value>
+    </data>
+    <data name="134" xml:space="preserve">
+        <value>Заліщики</value>
+    </data>
+    <data name="135" xml:space="preserve">
+        <value>Запоріжжя</value>
+    </data>
+    <data name="136" xml:space="preserve">
+        <value>Зараевск</value>
+    </data>
+    <data name="137" xml:space="preserve">
+        <value>Збараж</value>
+    </data>
+    <data name="138" xml:space="preserve">
+        <value>Зборів</value>
+    </data>
+    <data name="139" xml:space="preserve">
+        <value>Звенигородка</value>
+    </data>
+    <data name="140" xml:space="preserve">
+        <value>Здолбунів</value>
+    </data>
+    <data name="141" xml:space="preserve">
+        <value>Зіньків</value>
+    </data>
+    <data name="142" xml:space="preserve">
+        <value>Знам'янка</value>
+    </data>
+    <data name="143" xml:space="preserve">
+        <value>Золоте</value>
+    </data>
+    <data name="144" xml:space="preserve">
+        <value>Золотоноша</value>
+    </data>
+    <data name="145" xml:space="preserve">
+        <value>Золочів</value>
+    </data>
+    <data name="146" xml:space="preserve">
+        <value>Іваничі</value>
+    </data>
+    <data name="147" xml:space="preserve">
+        <value>Івано-Франківськ</value>
+    </data>
+    <data name="148" xml:space="preserve">
+        <value>Івано-Франкове</value>
+    </data>
+    <data name="149" xml:space="preserve">
+        <value>Іванопіль</value>
+    </data>
+    <data name="150" xml:space="preserve">
+        <value>Ізмаїл</value>
+    </data>
+    <data name="151" xml:space="preserve">
+        <value>Ізюм</value>
+    </data>
+    <data name="152" xml:space="preserve">
+        <value>Ізяслав</value>
+    </data>
+    <data name="153" xml:space="preserve">
+        <value>Іларіонове</value>
+    </data>
+    <data name="154" xml:space="preserve">
+        <value>Ірпінь</value>
+    </data>
+    <data name="155" xml:space="preserve">
+        <value>Іршава</value>
+    </data>
+    <data name="156" xml:space="preserve">
+        <value>Казанка</value>
+    </data>
+    <data name="157" xml:space="preserve">
+        <value>Калинівка</value>
+    </data>
+    <data name="158" xml:space="preserve">
+        <value>Калинівка</value>
+    </data>
+    <data name="159" xml:space="preserve">
+        <value>Калуш</value>
+    </data>
+    <data name="160" xml:space="preserve">
+        <value>Кам'янець-Подільський</value>
+    </data>
+    <data name="161" xml:space="preserve">
+        <value>Кам'янка</value>
+    </data>
+    <data name="162" xml:space="preserve">
+        <value>Кам'янка-Бузька</value>
+    </data>
+    <data name="163" xml:space="preserve">
+        <value>Кам’янське</value>
+    </data>
+    <data name="164" xml:space="preserve">
+        <value>Камінь-Каширський</value>
+    </data>
+    <data name="165" xml:space="preserve">
+        <value>Канів</value>
+    </data>
+    <data name="166" xml:space="preserve">
+        <value>Карлівка</value>
+    </data>
+    <data name="167" xml:space="preserve">
+        <value>Каховка</value>
+    </data>
+    <data name="168" xml:space="preserve">
+        <value>Кельменці</value>
+    </data>
+    <data name="169" xml:space="preserve">
+        <value>Керч</value>
+    </data>
+    <data name="170" xml:space="preserve">
+        <value>Кириківка</value>
+    </data>
+    <data name="171" xml:space="preserve">
+        <value>Ківерці</value>
+    </data>
+    <data name="172" xml:space="preserve">
+        <value>Кілія</value>
+    </data>
+    <data name="173" xml:space="preserve">
+        <value>Кобеляки</value>
+    </data>
+    <data name="174" xml:space="preserve">
+        <value>Ковель</value>
+    </data>
+    <data name="175" xml:space="preserve">
+        <value>Кодра</value>
+    </data>
+    <data name="176" xml:space="preserve">
+        <value>Козача Лопань</value>
+    </data>
+    <data name="177" xml:space="preserve">
+        <value>Козин</value>
+    </data>
+    <data name="178" xml:space="preserve">
+        <value>Козова</value>
+    </data>
+    <data name="179" xml:space="preserve">
+        <value>Козятин</value>
+    </data>
+    <data name="180" xml:space="preserve">
+        <value>Коломия</value>
+    </data>
+    <data name="181" xml:space="preserve">
+        <value>Конотоп</value>
+    </data>
+    <data name="182" xml:space="preserve">
+        <value>Корець</value>
+    </data>
+    <data name="183" xml:space="preserve">
+        <value>Коростень</value>
+    </data>
+    <data name="184" xml:space="preserve">
+        <value>Коростишів</value>
+    </data>
+    <data name="185" xml:space="preserve">
+        <value>Корсунь-Шевченківський</value>
+    </data>
+    <data name="186" xml:space="preserve">
+        <value>Косів</value>
+    </data>
+    <data name="187" xml:space="preserve">
+        <value>Костопіль</value>
+    </data>
+    <data name="188" xml:space="preserve">
+        <value>Костянтинівка</value>
+    </data>
+    <data name="189" xml:space="preserve">
+        <value>Котельва</value>
+    </data>
+    <data name="190" xml:space="preserve">
+        <value>Краматорськ</value>
+    </data>
+    <data name="191" xml:space="preserve">
+        <value>Красилів</value>
+    </data>
+    <data name="192" xml:space="preserve">
+        <value>Краснокутськ</value>
+    </data>
+    <data name="193" xml:space="preserve">
+        <value>Кременець</value>
+    </data>
+    <data name="194" xml:space="preserve">
+        <value>Кременчук</value>
+    </data>
+    <data name="195" xml:space="preserve">
+        <value>Кремінна</value>
+    </data>
+    <data name="196" xml:space="preserve">
+        <value>Криве Озеро</value>
+    </data>
+    <data name="197" xml:space="preserve">
+        <value>Кривий Ріг</value>
+    </data>
+    <data name="198" xml:space="preserve">
+        <value>Кролевець</value>
+    </data>
+    <data name="199" xml:space="preserve">
+        <value>Кропивницький</value>
+    </data>
+    <data name="200" xml:space="preserve">
+        <value>Куликівка</value>
+    </data>
+    <data name="201" xml:space="preserve">
+        <value>Куп'янськ</value>
+    </data>
+    <data name="202" xml:space="preserve">
+        <value>Ланівці</value>
+    </data>
+    <data name="203" xml:space="preserve">
+        <value>Лебедин</value>
+    </data>
+    <data name="204" xml:space="preserve">
+        <value>Лиман</value>
+    </data>
+    <data name="205" xml:space="preserve">
+        <value>Лисичанськ</value>
+    </data>
+    <data name="206" xml:space="preserve">
+        <value>Лісники</value>
+    </data>
+    <data name="207" xml:space="preserve">
+        <value>Лозова</value>
+    </data>
+    <data name="208" xml:space="preserve">
+        <value>Лубни</value>
+    </data>
+    <data name="209" xml:space="preserve">
+        <value>Луганськ</value>
+    </data>
+    <data name="210" xml:space="preserve">
+        <value>Луцьк</value>
+    </data>
+    <data name="211" xml:space="preserve">
+        <value>Любар</value>
+    </data>
+    <data name="212" xml:space="preserve">
+        <value>Любомль</value>
+    </data>
+    <data name="213" xml:space="preserve">
+        <value>Люботин</value>
+    </data>
+    <data name="214" xml:space="preserve">
+        <value>Магдалинівка</value>
+    </data>
+    <data name="215" xml:space="preserve">
+        <value>Макаров</value>
+    </data>
+    <data name="216" xml:space="preserve">
+        <value>Макіївка</value>
+    </data>
+    <data name="217" xml:space="preserve">
+        <value>Мала Виска</value>
+    </data>
+    <data name="218" xml:space="preserve">
+        <value>Малин</value>
+    </data>
+    <data name="219" xml:space="preserve">
+        <value>Маневичі</value>
+    </data>
+    <data name="220" xml:space="preserve">
+        <value>Маньківка</value>
+    </data>
+    <data name="221" xml:space="preserve">
+        <value>Мар'їнка</value>
+    </data>
+    <data name="222" xml:space="preserve">
+        <value>Маріуполь</value>
+    </data>
+    <data name="223" xml:space="preserve">
+        <value>Машівка</value>
+    </data>
+    <data name="224" xml:space="preserve">
+        <value>Межова</value>
+    </data>
+    <data name="225" xml:space="preserve">
+        <value>Мелітополь</value>
+    </data>
+    <data name="226" xml:space="preserve">
+        <value>Мена</value>
+    </data>
+    <data name="227" xml:space="preserve">
+        <value>Мерефа</value>
+    </data>
+    <data name="228" xml:space="preserve">
+        <value>Миколаїв</value>
+    </data>
+    <data name="229" xml:space="preserve">
+        <value>Миколаїв (Льв. обл)</value>
+    </data>
+    <data name="230" xml:space="preserve">
+        <value>Миргород</value>
+    </data>
+    <data name="231" xml:space="preserve">
+        <value>Міжгір'я</value>
+    </data>
+    <data name="232" xml:space="preserve">
+        <value>Могилів-Подільський</value>
+    </data>
+    <data name="233" xml:space="preserve">
+        <value>Монастириська</value>
+    </data>
+    <data name="234" xml:space="preserve">
+        <value>Моршин</value>
+    </data>
+    <data name="235" xml:space="preserve">
+        <value>Мостиська</value>
+    </data>
+    <data name="236" xml:space="preserve">
+        <value>Мукачеве</value>
+    </data>
+    <data name="237" xml:space="preserve">
+        <value>Надвірна</value>
+    </data>
+    <data name="238" xml:space="preserve">
+        <value>Немирів</value>
+    </data>
+    <data name="239" xml:space="preserve">
+        <value>Нетішин</value>
+    </data>
+    <data name="240" xml:space="preserve">
+        <value>Ніжин</value>
+    </data>
+    <data name="241" xml:space="preserve">
+        <value>Нікополь</value>
+    </data>
+    <data name="242" xml:space="preserve">
+        <value>Нова Водолага</value>
+    </data>
+    <data name="243" xml:space="preserve">
+        <value>Нова Каховка</value>
+    </data>
+    <data name="244" xml:space="preserve">
+        <value>Нова Одеса</value>
+    </data>
+    <data name="245" xml:space="preserve">
+        <value>Нова Ушиця</value>
+    </data>
+    <data name="246" xml:space="preserve">
+        <value>Новгород Сіверський</value>
+    </data>
+    <data name="247" xml:space="preserve">
+        <value>Нові Санжари</value>
+    </data>
+    <data name="248" xml:space="preserve">
+        <value>Новоазовськ</value>
+    </data>
+    <data name="249" xml:space="preserve">
+        <value>Новоархангельськ</value>
+    </data>
+    <data name="250" xml:space="preserve">
+        <value>Нововолинськ</value>
+    </data>
+    <data name="251" xml:space="preserve">
+        <value>Нововоронцовка</value>
+    </data>
+    <data name="252" xml:space="preserve">
+        <value>Новоград-Волинський</value>
+    </data>
+    <data name="253" xml:space="preserve">
+        <value>Новомиргород</value>
+    </data>
+    <data name="254" xml:space="preserve">
+        <value>Новомосковськ</value>
+    </data>
+    <data name="255" xml:space="preserve">
+        <value>Новоселиця</value>
+    </data>
+    <data name="256" xml:space="preserve">
+        <value>Новоукраїнка</value>
+    </data>
+    <data name="257" xml:space="preserve">
+        <value>Обухів</value>
+    </data>
+    <data name="258" xml:space="preserve">
+        <value>Овідіополь</value>
+    </data>
+    <data name="259" xml:space="preserve">
+        <value>Овруч</value>
+    </data>
+    <data name="260" xml:space="preserve">
+        <value>Олевськ</value>
+    </data>
+    <data name="261" xml:space="preserve">
+        <value>Олександрівка</value>
+    </data>
+    <data name="262" xml:space="preserve">
+        <value>Олександрія</value>
+    </data>
+    <data name="263" xml:space="preserve">
+        <value>Олешки</value>
+    </data>
+    <data name="264" xml:space="preserve">
+        <value>Острог</value>
+    </data>
+    <data name="265" xml:space="preserve">
+        <value>Охтирка</value>
+    </data>
+    <data name="266" xml:space="preserve">
+        <value>Очаків</value>
+    </data>
+    <data name="267" xml:space="preserve">
+        <value>Павлоград</value>
+    </data>
+    <data name="268" xml:space="preserve">
+        <value>Первомайськ (Луг. обл)</value>
+    </data>
+    <data name="269" xml:space="preserve">
+        <value>Первомайськ (Мик. обл)</value>
+    </data>
+    <data name="270" xml:space="preserve">
+        <value>Первомайський</value>
+    </data>
+    <data name="271" xml:space="preserve">
+        <value>Перечин</value>
+    </data>
+    <data name="272" xml:space="preserve">
+        <value>Переяслав-Хмельницький</value>
+    </data>
+    <data name="273" xml:space="preserve">
+        <value>Першотравенськ</value>
+    </data>
+    <data name="274" xml:space="preserve">
+        <value>Петропавлівка</value>
+    </data>
+    <data name="275" xml:space="preserve">
+        <value>Пирятин</value>
+    </data>
+    <data name="276" xml:space="preserve">
+        <value>Пісочин</value>
+    </data>
+    <data name="277" xml:space="preserve">
+        <value>Подільськ</value>
+    </data>
+    <data name="278" xml:space="preserve">
+        <value>Покров</value>
+    </data>
+    <data name="279" xml:space="preserve">
+        <value>Покровськ</value>
+    </data>
+    <data name="280" xml:space="preserve">
+        <value>Покровське</value>
+    </data>
+    <data name="281" xml:space="preserve">
+        <value>Полонне</value>
+    </data>
+    <data name="282" xml:space="preserve">
+        <value>Полтава</value>
+    </data>
+    <data name="283" xml:space="preserve">
+        <value>Поляниця</value>
+    </data>
+    <data name="284" xml:space="preserve">
+        <value>Приазовське</value>
+    </data>
+    <data name="285" xml:space="preserve">
+        <value>Прилуки</value>
+    </data>
+    <data name="286" xml:space="preserve">
+        <value>Приморськ</value>
+    </data>
+    <data name="287" xml:space="preserve">
+        <value>Пустомити</value>
+    </data>
+    <data name="288" xml:space="preserve">
+        <value>Путивль</value>
+    </data>
+    <data name="289" xml:space="preserve">
+        <value>Путила</value>
+    </data>
+    <data name="290" xml:space="preserve">
+        <value>Радехів</value>
+    </data>
+    <data name="291" xml:space="preserve">
+        <value>Рахів</value>
+    </data>
+    <data name="292" xml:space="preserve">
+        <value>Рені</value>
+    </data>
+    <data name="293" xml:space="preserve">
+        <value>Рівне</value>
+    </data>
+    <data name="294" xml:space="preserve">
+        <value>Ровеньки</value>
+    </data>
+    <data name="295" xml:space="preserve">
+        <value>Рогатин</value>
+    </data>
+    <data name="296" xml:space="preserve">
+        <value>Рожище</value>
+    </data>
+    <data name="297" xml:space="preserve">
+        <value>Рожнятів</value>
+    </data>
+    <data name="298" xml:space="preserve">
+        <value>Роздільна</value>
+    </data>
+    <data name="299" xml:space="preserve">
+        <value>Ромни</value>
+    </data>
+    <data name="300" xml:space="preserve">
+        <value>Рубіжне</value>
+    </data>
+    <data name="301" xml:space="preserve">
+        <value>с. Солонка</value>
+    </data>
+    <data name="302" xml:space="preserve">
+        <value>Самбір</value>
+    </data>
+    <data name="303" xml:space="preserve">
+        <value>Санаторно</value>
+    </data>
+    <data name="304" xml:space="preserve">
+        <value>Сарата</value>
+    </data>
+    <data name="305" xml:space="preserve">
+        <value>Сарни</value>
+    </data>
+    <data name="306" xml:space="preserve">
+        <value>Сахновщина</value>
+    </data>
+    <data name="307" xml:space="preserve">
+        <value>Свалява</value>
+    </data>
+    <data name="308" xml:space="preserve">
+        <value>Сватове</value>
+    </data>
+    <data name="309" xml:space="preserve">
+        <value>Свердловськ</value>
+    </data>
+    <data name="310" xml:space="preserve">
+        <value>Світловодськ</value>
+    </data>
+    <data name="311" xml:space="preserve">
+        <value>Севастополь</value>
+    </data>
+    <data name="312" xml:space="preserve">
+        <value>Селидове</value>
+    </data>
+    <data name="313" xml:space="preserve">
+        <value>Середина-Буда</value>
+    </data>
+    <data name="314" xml:space="preserve">
+        <value>Сєвєродонецьк</value>
+    </data>
+    <data name="315" xml:space="preserve">
+        <value>Синельникове</value>
+    </data>
+    <data name="316" xml:space="preserve">
+        <value>Скадовськ</value>
+    </data>
+    <data name="317" xml:space="preserve">
+        <value>Славута</value>
+    </data>
+    <data name="318" xml:space="preserve">
+        <value>Славутич</value>
+    </data>
+    <data name="319" xml:space="preserve">
+        <value>Слов'янськ</value>
+    </data>
+    <data name="320" xml:space="preserve">
+        <value>Сміла</value>
+    </data>
+    <data name="321" xml:space="preserve">
+        <value>Снігурівка</value>
+    </data>
+    <data name="322" xml:space="preserve">
+        <value>Сновськ</value>
+    </data>
+    <data name="323" xml:space="preserve">
+        <value>Снятин</value>
+    </data>
+    <data name="324" xml:space="preserve">
+        <value>Сокаль</value>
+    </data>
+    <data name="325" xml:space="preserve">
+        <value>Сосниця</value>
+    </data>
+    <data name="326" xml:space="preserve">
+        <value>Софіївка</value>
+    </data>
+    <data name="327" xml:space="preserve">
+        <value>Станично-Луганське</value>
+    </data>
+    <data name="328" xml:space="preserve">
+        <value>Станіславів</value>
+    </data>
+    <data name="329" xml:space="preserve">
+        <value>Стара Вижівка</value>
+    </data>
+    <data name="330" xml:space="preserve">
+        <value>Стара Синява</value>
+    </data>
+    <data name="331" xml:space="preserve">
+        <value>Старий Самбір</value>
+    </data>
+    <data name="332" xml:space="preserve">
+        <value>Старобільськ</value>
+    </data>
+    <data name="333" xml:space="preserve">
+        <value>Старокостянтинів</value>
+    </data>
+    <data name="334" xml:space="preserve">
+        <value>Сторожинець</value>
+    </data>
+    <data name="335" xml:space="preserve">
+        <value>Стрий</value>
+    </data>
+    <data name="336" xml:space="preserve">
+        <value>Суми</value>
+    </data>
+    <data name="337" xml:space="preserve">
+        <value>Тальне</value>
+    </data>
+    <data name="338" xml:space="preserve">
+        <value>Татарбунари</value>
+    </data>
+    <data name="339" xml:space="preserve">
+        <value>Татарів</value>
+    </data>
+    <data name="340" xml:space="preserve">
+        <value>Теофіполь</value>
+    </data>
+    <data name="341" xml:space="preserve">
+        <value>Теребовля</value>
+    </data>
+    <data name="342" xml:space="preserve">
+        <value>Тернопіль</value>
+    </data>
+    <data name="343" xml:space="preserve">
+        <value>Тетіїв</value>
+    </data>
+    <data name="344" xml:space="preserve">
+        <value>Тисмениця</value>
+    </data>
+    <data name="345" xml:space="preserve">
+        <value>Тлумач</value>
+    </data>
+    <data name="346" xml:space="preserve">
+        <value>Токмак</value>
+    </data>
+    <data name="347" xml:space="preserve">
+        <value>Трускавець</value>
+    </data>
+    <data name="348" xml:space="preserve">
+        <value>Тульчин</value>
+    </data>
+    <data name="349" xml:space="preserve">
+        <value>Турійськ</value>
+    </data>
+    <data name="350" xml:space="preserve">
+        <value>Турка</value>
+    </data>
+    <data name="351" xml:space="preserve">
+        <value>Тячів</value>
+    </data>
+    <data name="352" xml:space="preserve">
+        <value>Ужгород</value>
+    </data>
+    <data name="353" xml:space="preserve">
+        <value>Українка</value>
+    </data>
+    <data name="354" xml:space="preserve">
+        <value>Умань</value>
+    </data>
+    <data name="355" xml:space="preserve">
+        <value>Фастів</value>
+    </data>
+    <data name="356" xml:space="preserve">
+        <value>Харцизьк</value>
+    </data>
+    <data name="357" xml:space="preserve">
+        <value>Херсон</value>
+    </data>
+    <data name="358" xml:space="preserve">
+        <value>Хмельницький</value>
+    </data>
+    <data name="359" xml:space="preserve">
+        <value>Хмільник</value>
+    </data>
+    <data name="360" xml:space="preserve">
+        <value>Хотин</value>
+    </data>
+    <data name="361" xml:space="preserve">
+        <value>Христинівка</value>
+    </data>
+    <data name="362" xml:space="preserve">
+        <value>Хуст</value>
+    </data>
+    <data name="363" xml:space="preserve">
+        <value>Царичанка</value>
+    </data>
+    <data name="364" xml:space="preserve">
+        <value>Чабани</value>
+    </data>
+    <data name="365" xml:space="preserve">
+        <value>Червоноармійськ</value>
+    </data>
+    <data name="366" xml:space="preserve">
+        <value>Червоноармійська</value>
+    </data>
+    <data name="367" xml:space="preserve">
+        <value>Червоноград</value>
+    </data>
+    <data name="368" xml:space="preserve">
+        <value>Черкаси</value>
+    </data>
+    <data name="369" xml:space="preserve">
+        <value>Чернівці</value>
+    </data>
+    <data name="370" xml:space="preserve">
+        <value>Чернігів</value>
+    </data>
+    <data name="371" xml:space="preserve">
+        <value>Черняхів</value>
+    </data>
+    <data name="372" xml:space="preserve">
+        <value>Чечельник</value>
+    </data>
+    <data name="373" xml:space="preserve">
+        <value>Чоп</value>
+    </data>
+    <data name="374" xml:space="preserve">
+        <value>Чорноморськ</value>
+    </data>
+    <data name="375" xml:space="preserve">
+        <value>Чорноморське</value>
+    </data>
+    <data name="376" xml:space="preserve">
+        <value>Чортків</value>
+    </data>
+    <data name="377" xml:space="preserve">
+        <value>Чугуїв</value>
+    </data>
+    <data name="378" xml:space="preserve">
+        <value>Чутове</value>
+    </data>
+    <data name="379" xml:space="preserve">
+        <value>Шаргород</value>
+    </data>
+    <data name="380" xml:space="preserve">
+        <value>Шепетівка</value>
+    </data>
+    <data name="381" xml:space="preserve">
+        <value>Широке</value>
+    </data>
+    <data name="382" xml:space="preserve">
+        <value>Шостка</value>
+    </data>
+    <data name="383" xml:space="preserve">
+        <value>Шпола</value>
+    </data>
+    <data name="384" xml:space="preserve">
+        <value>Южний</value>
+    </data>
+    <data name="385" xml:space="preserve">
+        <value>Южноукраїнськ</value>
+    </data>
+    <data name="386" xml:space="preserve">
+        <value>Яворів</value>
+    </data>
+    <data name="387" xml:space="preserve">
+        <value>Ямпіль (Він. обл)</value>
+    </data>
+    <data name="388" xml:space="preserve">
+        <value>Ямпіль (Сум. обл)</value>
+    </data>
+    <data name="389" xml:space="preserve">
+        <value>Яремча</value>
+    </data>
+    <data name="390" xml:space="preserve">
+        <value>Ярмолинці</value>
+    </data>
+    <data name="391" xml:space="preserve">
+        <value>Ясинувата</value>
+    </data>
+</root>

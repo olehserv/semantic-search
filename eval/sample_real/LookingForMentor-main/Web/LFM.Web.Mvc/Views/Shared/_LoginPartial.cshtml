@@ -1,0 +1,41 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using LFM.DataAccess.DB.Core.Entities
+@using Lfm.Domain.Common.Caching.User
+@using Lfm.Domain.Common.Extensions
+@using Lfm.Web.Mvc.App.UIRenderers
+
+@inject SignInManager<LfmUser> SignInManager
+
+<ul class="navbar-nav">
+    @if (SignInManager.IsSignedIn(User))
+    {
+        <li class="nav-item">
+            @{
+                var userCabinetLink = UserCabinetUiRenderer.GetCabinetIndex(Context);
+            }
+            <a class="nav-link text-dark" asp-controller="@(userCabinetLink.ControllerName)" asp-action="@(userCabinetLink.ActionName)" title="Manage">Привіт @(await SignInManager.GetName(User))!</a>
+        </li>
+        <li class="nav-item">
+            <form class="form-inline" asp-controller="Auth" asp-action="Logout">
+                <button type="submit" class="nav-link btn btn-link text-dark">Вихід</button>
+            </form>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item dropdown show">
+            <button class="nav-link btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Зареєструватись
+            </button>
+            <div class="dropdown-menu scrollable-menu" aria-labelledby="dropdownMenuLink">
+                <a class="dropdown-item" asp-controller="Auth" asp-action="RegisterMentor">як Викладач</a>
+                <a class="dropdown-item" asp-controller="Auth" asp-action="RegisterStudent">як Учень</a>
+            </div>
+        </li>
+        
+        
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Вхід</a>
+        </li>
+    }
+</ul>

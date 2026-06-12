@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <UserSecretsId>aspnet-Lfm.Web.Manager.Blazor-C090C9D6-EC3A-420A-B2A3-38740B957031</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Update="app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="5.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="5.0.0" />
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Applications\Lfm.Manager.Blazor.App\Lfm.Manager.Blazor.App.csproj" />
+      <ProjectReference Include="..\..\Domain\Lfm.Domain.Admin.Services\Lfm.Domain.Admin.Services.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Pages\Shared\_LoginPartial.cshtml" />
+    </ItemGroup>
+
+</Project>

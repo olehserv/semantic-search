@@ -1,0 +1,80 @@
+@using Lfm.Web.Mvc.App.UIRenderers
+@using LFM.Core.Common.Extensions
+@model Lfm.Domain.ReadModels.ReviewModels.Mentor.MentorDetailedPreviewModel
+
+@{
+    ViewData["Title"] = "Викладач " + Model.Name;
+}
+
+<div class="d-flex px-3 justify-content-center">
+    <div class="col-md-8">
+    
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <img src="@Url.Action("GetMentorAvatar", "Images", new { mentorId = Model.MentorId })" class="profile-pic" alt="">
+        </div>
+    
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <label>Ім'я</label>
+            <hr>
+            <p>@Model.Name</p>
+        </div>
+    
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <label>Про викладача</label>
+            <hr>
+            <p>@Model.AboutInfo</p>
+        </div>
+
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <label>Місто</label>
+            <hr>
+            <p>@Model.TownName</p>
+        </div>
+    
+
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <label>Місце проведення занять</label>
+            <hr>
+            <p>@CommonUiRenderer.StudyingPlaceToString(Model.StudyingPlace)</p>
+        </div>
+    
+    
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <label>Освіта</label>
+            <hr>
+            <p>@Model.EducationInfo</p>
+        </div>
+
+        <table class="table">
+        
+            <tr>
+                <th>Назва предмету</th><th style="max-width: 300px;">Рівні підготовки</th><th>Ціна за годину</th>
+            </tr>
+
+            @foreach (var subj in Model.SubjectsList)
+            {
+                <tr>
+                    <td>@subj.SubjectName</td>
+                    <td style="max-width: 300px;"><small>@subj.Tags.ToSeparatedString(", ")</small></td>
+                    <td>@subj.CostPerHour UAH</td>
+                </tr>
+            }
+        </table>
+    
+        @if (Model.SubjectsList.Any() && Model.WantReceivePersonalOrders)
+        {
+            <div class="dropdown show">
+                <button class="btn btn-success dropdown-toggle btn-lg btn-block" type="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Відправити заявку до @Model.Name 
+                </button>
+                <div class="dropdown-menu scrollable-menu" aria-labelledby="dropdownMenuLink">
+                    @foreach (var s in Model.SubjectsList)
+                    {
+                        <a class="dropdown-item" asp-controller="Mentors" asp-action="ContactWithMentor" asp-route-mentorId="@Model.MentorId" asp-route-subjectId="@s.SubjectId">@s.SubjectName</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+    
+</div>

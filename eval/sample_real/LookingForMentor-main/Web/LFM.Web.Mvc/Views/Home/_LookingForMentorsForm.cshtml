@@ -1,0 +1,76 @@
+@model Lfm.Domain.ReadModels.SearchModels.MentorsSearchModel;
+@using LFM.Domain.Read.Providers
+@using Lfm.Web.Mvc.App.StaticServices
+@using Lfm.Web.Mvc.App.UIRenderers
+
+@{
+    var lastSearchRequest = CommonStaticService.PullLastSearchMentorsRequest(Context);
+}
+
+@inject IMasterDataProvider MasterDataProvider;
+
+
+<form asp-controller="Home" asp-action="LookingForMentors" class="row gy-2 gx-3" method="get">
+    <div class="col-auto">
+        <label>Предмет</label>
+        @{
+            var subjects = await MasterDataProvider.GetSubjectsList();
+              <select asp-for="SubjectId" class="form-control" style="max-height: 250px;">
+                  <option value="">---</option>
+                   @foreach (var s in subjects)
+                   {
+                        if (lastSearchRequest.SubjectId.HasValue && s.Id == lastSearchRequest.SubjectId.Value)
+                        {
+                            <option value="@s.Id" selected>@s.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@s.Id">@s.Name</option>
+                        }
+                    }
+              </select>
+        }
+    </div>
+    <div class="col-auto">
+        <label>Місце занять</label>
+        <select asp-for="StudyingPlace" class="form-control">
+            <option value="">---</option>
+            @foreach (var item in CommonUiRenderer.StudyingPlacesSelectItems(lastSearchRequest.StudyingPlace))
+            {
+                if (!string.IsNullOrWhiteSpace(item.Selected))
+                {
+                    <option value="@(item.Value)" selected>@(item.Name)</option>
+                }
+                else
+                {
+                    <option value="@(item.Value)">@(item.Name)</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <label>Місто</label>
+        @{
+            var towns = await MasterDataProvider.GetTownsList();
+            var firstFive = towns.Take(5).ToList();
+
+          <select asp-for="TownId" class="form-control" style="max-height: 250px;">
+              <option value="">---</option>
+              @foreach (var t in firstFive)
+              {
+                  if (lastSearchRequest.TownId.HasValue && lastSearchRequest.TownId.Value == t.Id)
+                  {
+                      <option value="@t.Id" selected>@t.Name</option>
+                  }
+                  else
+                  {
+                      <option value="@t.Id">@t.Name</option>
+                  }
+              }
+          </select>
+        }
+    </div>
+    <div class="col-auto d-flex align-items-end">
+        <button type="submit" class="btn btn-primary mt-4">Знайти</button>
+    </div>
+</form>

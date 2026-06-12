@@ -116,7 +116,8 @@ shim needs nothing else — no torch, no llama-index).
 - **Docker image.** `Dockerfile` + the `search-service` entry in
   `scripts/docker-compose.yml` run the service in a container. Qdrant access
   is configurable with `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_AUTOSTART` env
-  vars.
+  vars. `QDRANT_COLLECTION` (default `demo`) picks the collection, so two
+  indexed codebases can live side by side in one Qdrant.
 - **Embedding cache.** Embeddings made at query time are cached in
   `./.claude/cache/embeddings.pkl`. If you change the embedding model, delete
   this file — old vectors are not removed automatically.

@@ -1,0 +1,510 @@
+{
+  "per_query": [
+    {
+      "query": "where is user login handled",
+      "retrieved": [
+        "CommonUserProvider.cs",
+        "LfmUserCacheMiddleware.cs",
+        "LoginUserCommand.cs",
+        "LoginUserCommandHandler.cs",
+        "LogoutUserCommandHandler.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "how does a student register a new account",
+      "retrieved": [
+        "LFM.Web.Mvc.csproj",
+        "AuthController.cs",
+        "RegisterStudentCommandHandler.cs",
+        "RegisterStudentCommand.cs"
+      ],
+      "recall@5": 0.5,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.3065735963827292
+    },
+    {
+      "query": "how does a mentor register a new account",
+      "retrieved": [
+        "LFM.Web.Mvc.csproj",
+        "MentorsController.cs",
+        "RegisterMentorCommandHandler.cs",
+        "DeleteMentorSubjectCommand.cs"
+      ],
+      "recall@5": 0.5,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.3065735963827292
+    },
+    {
+      "query": "where is the user logged out",
+      "retrieved": [
+        "UserCachingService.cs",
+        "LogoutUserCommand.cs",
+        "LogoutUserCommandHandler.cs",
+        "LfmUserCacheMiddleware.cs",
+        "IUserCachingService.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "how does a mentor edit their profile",
+      "retrieved": [
+        "ToDoOperationsEnum.cs",
+        "MentorUserCabinetController.cs",
+        "EditMentorProfileCommandHandler.cs",
+        "EditMentorProfileCommand.cs",
+        "MentorsController.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "where does a mentor add a new subject they can teach",
+      "retrieved": [
+        "ToDoOperationsEnum.cs",
+        "CreatePersonalOrderToMentorCommandHandler.cs",
+        "MentorsController.cs",
+        "MentorUserCabinetController.cs",
+        "AddMentorSubjectCommand.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where can a mentor edit one of their subjects",
+      "retrieved": [
+        "ToDoOperationsEnum.cs",
+        "MentorUserCabinetController.cs",
+        "EditMentorSubjectCommand.cs",
+        "DeleteMentorSubjectCommand.cs",
+        "AddMentorSubjectCommand.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "how does a mentor delete a subject from their profile",
+      "retrieved": [
+        "ToDoOperationsEnum.cs",
+        "ReadModelsMapperConfigs.cs",
+        "DeleteMentorSubjectCommand.cs",
+        "DeleteMentorSubjectCommandHandler.cs",
+        "MentorsController.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "what happens when a mentor expresses interest in a student order",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "CollectionsExtensions.cs",
+        "MentorsController.cs",
+        "MentorProfileProvider.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "what happens when a student creates a looking for mentor request",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "MentorsController.cs",
+        "MentorsProvider.cs",
+        "MentorProfileProvider.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where does a student delete their mentor request",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "DeleteMentorSubjectCommand.cs",
+        "DeleteLookingForMentorRequestCommand.cs",
+        "MentorsProvider.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "how is a personal order to a specific mentor created",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "InterestOrderCommand.cs",
+        "MentorsController.cs",
+        "MentorUserCabinetController.cs",
+        "ApprovePersonalOrderCommand.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where does a mentor approve a personal order from a student",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "ApprovePersonalOrderCommand.cs",
+        "ApproveMentorProposeCommand.cs",
+        "MentorProfileProvider.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where does a mentor reject a personal order",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "RejectPersonalOrderCommand.cs",
+        "RejectPersonalOrderCommandHandler.cs",
+        "MentorProfileProvider.cs",
+        "MentorUserCabinetController.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "how does a student approve a mentor who proposed on their request",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "MentorProfileProvider.cs",
+        "ApproveMentorProposeFormModel.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where is the mentor search with filters and paging implemented",
+      "retrieved": [
+        "CollectionsExtensions.cs",
+        "LFM.Web.Mvc.csproj",
+        "MentorsProvider.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "which provider reads a mentor's own profile and subject data",
+      "retrieved": [
+        "SubjectsProvider.cs",
+        "MentorUserCabinetController.cs",
+        "IMentorProfileProvider.cs",
+        "MentorProfileProvider.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "where is the student profile data read from the database",
+      "retrieved": [
+        "SubjectProvideService.cs",
+        "ApprovedOrder.cs",
+        "RejectedOrder.cs",
+        "MentorsProfile.cs",
+        "PersonalRequestToMentorDetailsReviewModel.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "how are subjects cached in memory",
+      "retrieved": [
+        "SubjectCachingService.cs",
+        "UserCachingService.cs",
+        "IUserCachingService.cs",
+        "SubjectProvideService.cs",
+        "SubjectsProvider.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "where is the list of towns cached",
+      "retrieved": [
+        "TownsCachingService.cs",
+        "MasterData.cs",
+        "TownsProvideService.cs",
+        "CommonUserCacheMiddleware.cs",
+        "LfmUserCacheMiddleware.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "how is the current user cached between requests",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "LfmUserCacheMiddleware.cs",
+        "IUserCachingService.cs",
+        "UserCachingService.cs",
+        "SubjectCachingService.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "where is the mediator that dispatches commands to their handlers",
+      "retrieved": [
+        "Mediator.cs",
+        "IMediator.cs",
+        "ErrorHandlingMiddleware.cs",
+        "ModuleExporter.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "how are commands validated before they are executed",
+      "retrieved": [
+        "ICommandValidator.cs",
+        "ModelStateValidationAttribute.cs",
+        "ValidateCommandService.cs",
+        "ModuleExporter.cs",
+        "BaseCommand.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "where are unhandled exceptions converted into error responses",
+      "retrieved": [
+        "ModelStateValidationAttribute.cs",
+        "MentorProfileProvider.cs",
+        "LfmException.cs",
+        "ErrorHandlingMiddleware.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "where is the Entity Framework database context defined",
+      "retrieved": [
+        "InitialDbSeed.cs",
+        "LfmSqliteDbContext.cs",
+        "InterestedMentorsOrdersRelation.cs",
+        "Repository.cs",
+        "LfmDbContext.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.2,
+      "ndcg@5": 0.38685280723454163
+    },
+    {
+      "query": "where is the SQLite database context configured",
+      "retrieved": [
+        "Lfm.Admin.Blazor.App.csproj",
+        "LfmSqliteDbContext.cs",
+        "DiServices.cs",
+        "LFM.DataAccess.DB.SQLite.csproj",
+        "ModuleExporter.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.5,
+      "ndcg@5": 0.6309297535714575
+    },
+    {
+      "query": "generic repository for database access",
+      "retrieved": [
+        "SubjectsProvider.cs",
+        "MentorsProvider.cs",
+        "IRepository.cs",
+        "Repository.cs",
+        "ModuleExporter.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "where is the database filled with initial seed data",
+      "retrieved": [
+        "StudentProfileProvider.cs",
+        "Program.cs",
+        "InitialDbSeed.cs",
+        "PendingManagerCreation.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "which entity stores a student's order request",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "MentorProfileProvider.cs",
+        "InterestedMentorsOrdersRelation.cs",
+        "OrderRequest.cs",
+        "StudentProfileProvider.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "which entity links interested mentors to an order",
+      "retrieved": [
+        "CreatePersonalOrderToMentorCommandHandler.cs",
+        "MentorProfileProvider.cs",
+        "InterestOrderCommand.cs",
+        "MentorUserCabinetController.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where is the application user entity defined",
+      "retrieved": [
+        "ApplicationBuilderExtensions.cs",
+        "CommonUserCacheMiddleware.cs",
+        "InterestedMentorsOrdersRelation.cs",
+        "Pipeline.cs",
+        "UserManagerExtensions.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "which entity holds a mentor's profile data",
+      "retrieved": [
+        "EditMentorProfileCommandHandler.cs",
+        "MentorProfileProvider.cs",
+        "MentorsProfile.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "how does the todo queue execute an approved operation",
+      "retrieved": [
+        "INeedsApproveCommandHandler.cs",
+        "ModelsConfiguration.cs",
+        "ToDo.cs",
+        "ToDoEntity.cs",
+        "ManageToDoService.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where are todo items for manager review created",
+      "retrieved": [
+        "PendingToDosListPageModel.cs",
+        "ListPageModel.cs",
+        "ToDoReviewModel.cs",
+        "ToDoDetailedReviewModel.cs",
+        "ManagersModelsMaps.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "base class for commands that need manager approval",
+      "retrieved": [
+        "PendingToDosListPageModel.cs",
+        "DiExporter.cs",
+        "Lfm.Manager.Blazor.App.csproj",
+        "StudentUserCabinetController.cs",
+        "BaseCommand.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    },
+    {
+      "query": "where does a manager start reviewing, approve or reject a todo",
+      "retrieved": [
+        "MasterData.cs",
+        "ManageToDoService.cs",
+        "INeedsApproveCommandHandler.cs",
+        "IToDoProvider.cs",
+        "RejectedToDoReviewModel.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.5,
+      "ndcg@5": 0.6309297535714575
+    },
+    {
+      "query": "which controller serves login and registration pages",
+      "retrieved": [
+        "AlertExtensions.cs",
+        "LFM.Web.Mvc.csproj",
+        "AuthController.cs",
+        "RegisterMentorCommand.cs",
+        "LoginFormModel.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg@5": 0.5
+    },
+    {
+      "query": "controller for the mentor's personal cabinet",
+      "retrieved": [
+        "StudentUserCabinetController.cs",
+        "MentorsController.cs",
+        "ApprovePersonalOrderCommand.cs",
+        "MentorUserCabinetController.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 0.25,
+      "ndcg@5": 0.43067655807339306
+    },
+    {
+      "query": "how is a mentor's avatar image served",
+      "retrieved": [
+        "ImagesController.cs",
+        "EditMentorProfileCommandHandler.cs",
+        "MentorProfileProvider.cs",
+        "MentorsProfileImage.cs",
+        "MentorsController.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "where are manager accounts created and blocked",
+      "retrieved": [
+        "LFM.Web.Mvc.csproj",
+        "BlockedManager.cs",
+        "ManagerReviewModel.cs",
+        "ManagersProvider.cs"
+      ],
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "ndcg@5": 0.0
+    }
+  ],
+  "summary": {
+    "recall@5": 0.6,
+    "mrr": 0.2633333333333333,
+    "ndcg@5": 0.3426817992932515
+  }
+}

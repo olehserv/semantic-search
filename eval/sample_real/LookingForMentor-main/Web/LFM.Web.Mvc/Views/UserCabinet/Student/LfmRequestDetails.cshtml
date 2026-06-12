@@ -1,0 +1,114 @@
+@using Lfm.Web.Mvc.App.UIRenderers
+@model Lfm.Domain.ReadModels.ReviewModels.StudentProfile.LfmRequestDetailsReviewModel
+
+@{
+    ViewData["Title"] = "Активна заявка";
+    Layout = "../_UserCabinetLayout.cshtml";
+}
+
+
+<div class="card">
+	<div class="row">
+		<article class="card-body p-5">
+			<h3 class="title mb-3">@Model.SubjectName, @Model.TagName</h3>
+
+			<dl class="param param-feature">
+				<dt>Місце проведення занять</dt>
+				<dd>@CommonUiRenderer.StudyingPlaceToString(Model.StudyingPlace)</dd>
+			</dl>
+			
+			<dl class="param param-feature">
+				<dt>Кількість занять в тиждень</dt>
+				<dd>@Model.AmountOfLessonsPerWeek</dd>
+			</dl> 
+			
+			<dl class="param param-feature">
+				<dt>Тривалість занять</dt>
+				<dd>@CommonUiRenderer.LessonDurationToString(Model.LessonDuration)</dd>
+			</dl>
+			
+			<dl class="param param-feature">
+				<dt>Мінімальна ціна за годину</dt>
+				<dd>@Model.CostFrom UAH</dd>
+			</dl>
+			
+			<dl class="param param-feature">
+				<dt>Максимальна ціна за годину</dt>
+				<dd>@Model.CostTo UAH</dd>
+			</dl>
+
+			<hr>
+
+			@if (!string.IsNullOrWhiteSpace(Model.WhenToPractice) || 
+                 !string.IsNullOrWhiteSpace(Model.WhichHelp) ||
+                 !string.IsNullOrWhiteSpace(Model.AdditionalWishes))
+            {
+
+            	if (!string.IsNullOrWhiteSpace(Model.WhenToPractice))
+            	{
+            		<dl class="item-property">
+            			<dt>Зручний час для проведення занять.</dt>
+            			<dd><p>@Model.WhenToPractice</p></dd>
+            		</dl>
+            	}
+
+            	if (!string.IsNullOrWhiteSpace(Model.WhichHelp))
+            	{
+            		<dl class="item-property">
+            			<dt>З чим потрібна допомога.</dt>
+            			<dd><p>@Model.WhichHelp</p></dd>
+            		</dl>	
+            	}
+
+            	if (!string.IsNullOrWhiteSpace(Model.AdditionalWishes))
+            	{
+            		<dl class="item-property">
+            			<dt>Додаткові побажання.</dt>
+            			<dd><p>@Model.AdditionalWishes</p></dd>
+            		</dl>	
+            	}
+
+            	<hr>
+            }
+			
+			<dl class="item-property">
+				<dt>Створено</dt>
+				<dd><p>@Model.CreationDateTime.ToString("dd/MM/yyyy")</p></dd>
+			</dl>
+			
+			
+			<form asp-controller="StudentUserCabinet" asp-action="DeleteOrderRequest" asp-route-orderId="@Model.Id" method="post">
+				<button class="btn btn-lg btn-outline-danger mb-3">Видалити</button>
+			</form>
+			
+			
+			<div class="list-group">
+				
+				<h6>Оберіть викладача з яким ви бажаєте працювати за цією заявкою.</h6>
+				
+				@foreach (var mentor in Model.MentorsInteresting)
+				{
+					<div class="d-flex border-info border rounded px-3 py-2 d-flex align-items-center">
+
+						<div>
+							<img src="@Url.Action("GetMentorAvatar", "Images", new {mentorId = mentor.Id})" class="order-1 order-lg-2 mentors_min_photo" alt="@mentor.Name">
+						</div>
+
+						<label class="h4 px-3">
+							<a asp-controller="Mentors"
+							   asp-action="MentorDetails"
+							   asp-route-mentorId="@mentor.Id" target="_blank">@mentor.Name</a>
+						</label>
+
+						<form asp-controller="StudentUserCabinet" asp-action="ApproveMentorPropose" method="post">
+							<input hidden type="number" name="OrderId" value="@Model.Id"/>
+							<input hidden type="number" name="MentorId" value="@mentor.Id"/>
+							<button class="btn btm-sm btn-success">Підтвердити</button>
+						</form>
+					</div>
+				}
+			</div>
+			
+		</article>
+	</div>
+</div>

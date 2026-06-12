@@ -1,0 +1,130 @@
+@using LFM.DataAccess.DB.Core.Types
+@using LFM.Domain.Read.Providers
+@using Lfm.Web.Mvc.App.UIRenderers
+@model Lfm.Web.Mvc.Models.FormModels.UserCabinet.Student.CreateLookingForMentorRequestFormModel
+@inject ISubjectsProvider SubjectsProvider;
+@{
+    ViewData["Title"] = "Створення замовлення";
+    Layout = "../_UserCabinetLayout.cshtml";
+    
+    var subject = await SubjectsProvider.GetSubject(Model.SubjectId);
+}
+
+<form asp-controller="StudentUserCabinet" asp-action="CreateOrderRequest" method="post">
+    <h4>Заповніть форму, щоб створити заявку та знайти підходящого вам викладача.</h4>
+    <hr/>
+
+    <div class="form-group">
+        <div class="form-group">
+            <h5>Інформація про предмет</h5>
+        </div>
+                
+        <div class="form-group">
+            <input asp-for="SubjectId" hidden/>
+
+            <label>Оберіть рівень підготовки</label>
+            
+            <select asp-for="TagId" class="form-control" style="max-height: 250px;" size="@subject.Tags.Count">
+                <option selected value="@(subject.Tags.FirstOrDefault()?.Id)">@(subject.Tags.FirstOrDefault()?.Name)</option>
+                @foreach (var t in subject.Tags.Skip(1))
+                {
+                    <option value="@(t.Id)">@t.Name</option>
+                }
+            </select>
+                    
+            <span asp-validation-for="TagId" class="text-danger"></span>
+        </div>
+                
+        <div class="form-group">
+                    
+            <label>Місце проведення занять</label>
+            
+            @{
+                int i = 1;
+                foreach (var box in CommonUiRenderer.StudyingPlacesCheckboxes(StudyingPlaces.ONLINE_ONLY))
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="StudyingPlace" id="radio_@i" value="@box.Value" @box.Checked>
+                        <label class="form-check-label" for="radio_@i">
+                            @box.Name
+                        </label>
+                    </div>
+                            
+                    i++;
+                }
+            }
+        </div>
+                
+        <div class="form-group">
+            <label>Кількість занять на тиждень</label>
+            <input type="number" min="1" max="7" class="form-control" asp-for="AmountOfLessonsPerWeek" placeholder="Кількість занять в тиждень">
+            <span asp-validation-for="AmountOfLessonsPerWeek" class="text-danger"></span>
+        </div>
+                
+                
+        <div class="form-group">
+            <label>Тривалість занять</label>
+            @{
+                int j = 1;
+                foreach (var box in CommonUiRenderer.LessonDurationCheckboxes(LessonDuration.ONE_HOUR))
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="LessonDuration" id="LessonDuration_@j" value="@(box.Value)" @box.Checked>
+                        <label class="form-check-label" for="LessonDuration_@j">
+                            @box.Name
+                        </label>
+                    </div>
+                            
+                    j++;
+                }
+            }
+                    
+        </div>
+                
+        <div class="form-group">
+            <label>Мінімальна ціна</label>
+            <input type="number" min="50" max="500" class="form-control" asp-for="CostFrom" placeholder="Мінімальна ціна">
+            <span asp-validation-for="CostFrom" class="text-danger"></span>
+        </div>
+                
+        <div class="form-group">
+            <label>Максимальна ціна</label>
+            <input type="number" min="50" max="500" class="form-control" asp-for="CostTo" placeholder="Максимальна ціна">
+            <span asp-validation-for="CostTo" class="text-danger"></span>
+        </div>
+                
+    </div>
+            
+    <hr/>
+
+    <div class="form-group">
+        <div class="form-group">
+            <h5>Додаткова інформація</h5>
+        </div>
+                
+        <div class="form-group">
+            <label>Зручний час для проведення занять.</label>
+            <textarea type="text" class="form-control" asp-for="WhenToPractice" placeholder="Зручний час для проведення занять"></textarea>
+            <span asp-validation-for="WhenToPractice" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label>З чим потрібна допомога?</label>
+            <textarea type="text" class="form-control" asp-for="WhichHelp" placeholder="З чим потрібна вам допомога?"></textarea>
+            <span asp-validation-for="WhichHelp" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Додаткові побажання?</label>
+            <textarea type="text" class="form-control" asp-for="AdditionalWishes" placeholder="Додаткові побажання"></textarea>
+            <span asp-validation-for="AdditionalWishes" class="text-danger"></span>
+        </div>
+    </div>
+    <hr/>
+
+    <div class="form-group">
+        <button class="btn btn-success" type="submit">Створити</button>
+    </div>
+</form>
+
+

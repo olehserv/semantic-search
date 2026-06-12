@@ -1,0 +1,59 @@
+@using Lfm.Core.Common.Web.Models
+@namespace Lfm.Web.Manager.Blazor.Components
+<nav class="mt-3">
+    <ul class="pagination justify-content-center">
+        
+        @if (Model.PageNumber > 1)
+        {
+        <li class="page-item">
+            <button class="page-link" @onclick="(() => Click())">&lt;&lt;</button>
+        </li>
+        }
+                            
+        @foreach (var prev in Model.GetNumbersAllPreviousPages())
+        {
+        <li class="page-item">
+            <button class="page-link" @onclick="(() => Click(prev))">@prev</button>
+        </li>
+        }
+            
+                            
+        @if (Model.PageNumber > 0)
+        {
+        <li class="page-item active">
+            <button disabled class="page-link">@Model.PageNumber</button>
+        </li>   
+        }
+            
+            
+        @foreach (var next in Model.GetNumbersAllNextPages())
+        {
+        <li class="page-item">
+            <button class="page-link" @onclick="(() => Click(next))">@next</button>
+        </li>
+        }
+                            
+            
+        @if (Model.PageNumber < Model.TotalPages)
+        {
+        <li class="page-item">
+            <button class="page-link" @onclick="(() => Click(Model.TotalPages))">>></button>
+        </li>
+        }
+        
+    </ul>
+</nav>
+
+@code 
+{
+    [Parameter]
+    public PaginationModel Model { get; set; }
+
+    [Parameter]
+    public Func<int, Task> GoToPageFunc { get; set; }
+
+    private Task Click(int page = 1)
+    {
+        return GoToPageFunc.Invoke(page);
+    }
+}

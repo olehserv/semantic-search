@@ -1,0 +1,20 @@
+﻿@page
+@using LFM.DataAccess.DB.Core.Types
+@using Microsoft.AspNetCore.Authorization
+@using LFM.DataAccess.DB.Core.Entities
+@attribute [IgnoreAntiforgeryToken]
+@attribute [Authorize(Roles = LfmIdentityRolesNames.Manager)]
+@inject SignInManager<LfmUser> SignInManager
+
+@functions {
+
+    public async Task<IActionResult> OnPost()
+    {
+        if (SignInManager.IsSignedIn(User))
+        {
+            await SignInManager.SignOutAsync();
+        }
+
+        return Redirect("~/");
+    }
+}

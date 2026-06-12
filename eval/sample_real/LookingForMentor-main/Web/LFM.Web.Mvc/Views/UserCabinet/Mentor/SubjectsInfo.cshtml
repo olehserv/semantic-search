@@ -1,0 +1,58 @@
+@using LFM.Core.Common.Extensions
+@using Lfm.Domain.Common.Extensions
+@using LFM.Domain.Read.Providers
+@model IEnumerable<Lfm.Domain.ReadModels.ReviewModels.MentorProfile.MentorSubjectReviewModel>;
+@inject IMentorProfileProvider MentorProfileProvider;
+@{
+    ViewData["Title"] = "Мої предмети";
+    Layout = "../_UserCabinetLayout.cshtml";
+}
+
+<h4 class="mb-3">Мої предмети</h4>
+
+@{
+    var availableSubjects = (await MentorProfileProvider.GetAvailableSubjects(User.GetId())).ToList();
+    if (availableSubjects?.Any() == true)
+    {
+        <div class="dropdown show mb-3">
+            <button class="btn btn-sm btn-success dropdown-toggle" type="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Додати предмет
+            </button>
+            <div class="dropdown-menu scrollable-menu" aria-labelledby="dropdownMenuLink">
+                @foreach (var s in availableSubjects)
+                {
+                    <a class="dropdown-item" asp-controller="MentorUserCabinet" asp-action="AddSubject" asp-route-subjectId="@s.Id">@s.Name</a>
+                }
+            </div>
+        </div>
+    }
+}
+
+<table class="table mb-3">
+    
+    @if (Model?.Any() == true)
+    {
+        <tr>
+            <th>Назва предмету</th><th style="max-width: 300px;">Рівні підготовки</th><th>Ціна за годину (UAH)</th><th style="width: 180px;"></th>
+        </tr>
+
+        foreach (var subj in Model)
+        {
+            <tr>
+                <td>@subj.SubjectName</td>
+                <td style="max-width: 300px;"><small>@subj.SelectedTags.Select(t => t.Name).ToSeparatedString(", ")</small></td>
+                <td>@subj.CostPerHour UAH</td>
+                <td>
+                    <form asp-controller="MentorUserCabinet" asp-action="DeleteSubject" asp-route-subjectId="@subj.SubjectId" method="post">
+                        <a class="btn btn-sm btn-warning" asp-controller="MentorUserCabinet" asp-action="EditSubject" asp-route-subjectId="@subj.SubjectId">Змінити</a>
+                        <button type="submit" class="btn btn-sm btn-danger">Видалити</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    }
+    else
+    {
+        <div class="text-center">Дані відсутні</div>
+    }
+</table>

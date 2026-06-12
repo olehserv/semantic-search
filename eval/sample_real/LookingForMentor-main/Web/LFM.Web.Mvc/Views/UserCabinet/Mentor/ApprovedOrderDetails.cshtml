@@ -1,0 +1,92 @@
+@using Lfm.Web.Mvc.App.UIRenderers
+@model Lfm.Domain.ReadModels.ReviewModels.MentorProfile.MentorsApprovedOrderDetailedReviewModel
+
+@{
+	ViewData["Title"] = "Підтверджена заявка";
+	Layout = "../_UserCabinetLayout.cshtml";
+}
+
+<div class="card">
+	<div class="row">
+		<article class="card-body p-5">
+			<h3 class="title mb-3">@Model.SubjectName, @Model.TagName</h3>
+
+			<dl class="param param-feature">
+				<dt>Ім'я учня</dt>
+				<dd>@Model.StudentName</dd>
+			</dl>
+			
+			<dl class="param param-feature">
+				<dt>Електронна пошта учня</dt>
+				<dd>@Model.StudentEmail</dd>
+			</dl>
+			
+			<dl class="param param-feature">
+				<dt>Номер телефону учня</dt>
+				<dd>@Model.StudentPhoneNumber</dd>
+			</dl>
+
+			<hr>
+
+			<dl class="param param-feature">
+				<dt>Місце проведення занять</dt>
+				<dd>@CommonUiRenderer.StudyingPlaceToString(Model.StudyingPlace)</dd>
+			</dl>  
+			
+			<dl class="param param-feature">
+				<dt>Кількість занять в тиждень</dt>
+				<dd>@Model.AmountOfLessonsPerWeek</dd>
+			</dl> 
+			
+			<dl class="param param-feature">
+				<dt>Тривалість занять</dt>
+				<dd>@CommonUiRenderer.LessonDurationToString(Model.LessonDuration)</dd>
+			</dl>
+			
+			<dl class="param param-feature">
+				<dt>Ціна за годину</dt>
+				<dd>@Model.CostPerHour UAH</dd>
+			</dl>
+			
+			<hr>
+
+			@if (!string.IsNullOrWhiteSpace(Model.WhenToPractice) || 
+                 !string.IsNullOrWhiteSpace(Model.WhichHelp) ||
+                 !string.IsNullOrWhiteSpace(Model.AdditionalWishes))
+            {
+
+            	if (!string.IsNullOrWhiteSpace(Model.WhenToPractice))
+            	{
+            		<dl class="item-property">
+            			<dt>Зручний час для проведення занять учневі</dt>
+            			<dd><p>@Model.WhenToPractice</p></dd>
+            		</dl>
+            	}
+
+            	if (!string.IsNullOrWhiteSpace(Model.WhichHelp))
+            	{
+            		<dl class="item-property">
+            			<dt>З чим потрібна допомога.</dt>
+            			<dd><p>@Model.WhichHelp</p></dd>
+            		</dl>	
+            	}
+
+            	if (!string.IsNullOrWhiteSpace(Model.AdditionalWishes))
+            	{
+            		<dl class="item-property">
+            			<dt>Додаткові побажання</dt>
+            			<dd><p>@Model.AdditionalWishes</p></dd>
+            		</dl>	
+            	}
+
+            	<hr>
+            }
+			
+			<dl class="item-property">
+				<dt>Дата підтвердження</dt>
+				<dd><p>@Model.ApprovedDateTime.ToString("dd/MM/yyyy")</p></dd>
+			</dl>
+			
+		</article>
+	</div>
+</div>

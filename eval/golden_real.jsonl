@@ -1,0 +1,40 @@
+{"query": "where is user login handled", "relevant_files": ["LoginUserCommandHandler.cs"]}
+{"query": "how does a student register a new account", "relevant_files": ["RegisterStudentCommandHandler.cs", "RegistrationService.cs"]}
+{"query": "how does a mentor register a new account", "relevant_files": ["RegisterMentorCommandHandler.cs", "RegistrationService.cs"]}
+{"query": "where is the user logged out", "relevant_files": ["LogoutUserCommandHandler.cs"]}
+{"query": "how does a mentor edit their profile", "relevant_files": ["EditMentorProfileCommandHandler.cs"]}
+{"query": "where does a mentor add a new subject they can teach", "relevant_files": ["AddMentorSubjectCommandHandler.cs"]}
+{"query": "where can a mentor edit one of their subjects", "relevant_files": ["EditMentorSubjectCommandHandler.cs"]}
+{"query": "how does a mentor delete a subject from their profile", "relevant_files": ["DeleteMentorSubjectCommandHandler.cs"]}
+{"query": "what happens when a mentor expresses interest in a student order", "relevant_files": ["InterestOrderCommandHandler.cs"]}
+{"query": "what happens when a student creates a looking for mentor request", "relevant_files": ["CreateLookingForMentorRequestCommandHandler.cs"]}
+{"query": "where does a student delete their mentor request", "relevant_files": ["DeleteLookingForMentorRequestCommandHandler.cs"]}
+{"query": "how is a personal order to a specific mentor created", "relevant_files": ["CreatePersonalOrderToMentorCommandHandler.cs"]}
+{"query": "where does a mentor approve a personal order from a student", "relevant_files": ["ApprovePersonalOrderCommandHandler.cs"]}
+{"query": "where does a mentor reject a personal order", "relevant_files": ["RejectPersonalOrderCommandHandler.cs"]}
+{"query": "how does a student approve a mentor who proposed on their request", "relevant_files": ["ApproveMentorProposeCommandHandler.cs"]}
+{"query": "where is the mentor search with filters and paging implemented", "relevant_files": ["MentorsProvider.cs"]}
+{"query": "which provider reads a mentor's own profile and subject data", "relevant_files": ["MentorProfileProvider.cs"]}
+{"query": "where is the student profile data read from the database", "relevant_files": ["StudentProfileProvider.cs"]}
+{"query": "how are subjects cached in memory", "relevant_files": ["SubjectCachingService.cs"]}
+{"query": "where is the list of towns cached", "relevant_files": ["TownsCachingService.cs"]}
+{"query": "how is the current user cached between requests", "relevant_files": ["UserCachingService.cs"]}
+{"query": "where is the mediator that dispatches commands to their handlers", "relevant_files": ["Mediator.cs"]}
+{"query": "how are commands validated before they are executed", "relevant_files": ["ValidateCommandService.cs"]}
+{"query": "where are unhandled exceptions converted into error responses", "relevant_files": ["ErrorHandlingMiddleware.cs"]}
+{"query": "where is the Entity Framework database context defined", "relevant_files": ["LfmDbContext.cs"]}
+{"query": "where is the SQLite database context configured", "relevant_files": ["LfmSqliteDbContext.cs"]}
+{"query": "generic repository for database access", "relevant_files": ["Repository.cs"]}
+{"query": "where is the database filled with initial seed data", "relevant_files": ["InitialDbSeed.cs"]}
+{"query": "which entity stores a student's order request", "relevant_files": ["OrderRequest.cs"]}
+{"query": "which entity links interested mentors to an order", "relevant_files": ["InterestedMentorsOrdersRelation.cs"]}
+{"query": "where is the application user entity defined", "relevant_files": ["LfmUser.cs"]}
+{"query": "which entity holds a mentor's profile data", "relevant_files": ["MentorsProfile.cs"]}
+{"query": "how does the todo queue execute an approved operation", "relevant_files": ["ToDoHandler.cs"]}
+{"query": "where are todo items for manager review created", "relevant_files": ["CreateToDoService.cs"]}
+{"query": "base class for commands that need manager approval", "relevant_files": ["BaseNeedsApproveCommandHandler.cs"]}
+{"query": "where does a manager start reviewing, approve or reject a todo", "relevant_files": ["ManageToDoService.cs"]}
+{"query": "which controller serves login and registration pages", "relevant_files": ["AuthController.cs"]}
+{"query": "controller for the mentor's personal cabinet", "relevant_files": ["MentorUserCabinetController.cs"]}
+{"query": "how is a mentor's avatar image served", "relevant_files": ["ImagesController.cs"]}
+{"query": "where are manager accounts created and blocked", "relevant_files": ["ManagersWriteService.cs"]}

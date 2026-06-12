@@ -21,7 +21,10 @@ from, and compares them with the files that are known to be correct.
 | `metrics.py` | The metric functions (only stdlib, unit-tested) |
 | `run_eval.py` | Runs `query()` for every golden question and prints the report |
 | `golden.jsonl` | The labelled set: one `{"query", "relevant_files"}` per line |
+| `golden_real.jsonl` | 40 questions for the real project in `sample_real/` (see below) |
 | `sample_corpus/` | A small fake .NET app, so the demo works alone |
+| `sample_real/` | A real .NET project for honest numbers (**gitignored** — drop a codebase here yourself) |
+| `baselines/` | Recorded eval reports; Phase 2 changes must beat these numbers |
 | `run_demo.sh` | One command: venv + Qdrant + index the corpus + run the eval |
 
 ## Run it
@@ -33,7 +36,26 @@ python3 -m pytest tests/ -q     # unit tests (no Docker or ML stack needed)
 
 **Warning:** the demo rebuilds the Qdrant collection named in
 `scripts/qdrant.py` (`COLLECTION_NAME`). If your real index uses the same
-name, the demo will replace it.
+name, the demo will replace it. The name is env-driven
+(`QDRANT_COLLECTION`, default `demo`), so give real indexes their own
+collection.
+
+## The real-project baseline
+
+`golden_real.jsonl` holds 40 questions about the LookingForMentor project
+(a .NET CQRS + Blazor app in `sample_real/`, gitignored). The labels use
+file names that exist exactly once in that project (`ErrorHandlingMiddleware.cs`
+exists twice, but both copies are correct answers). To reproduce the baseline:
+
+```bash
+cd eval/sample_real/LookingForMentor-main
+QDRANT_COLLECTION=lfm PYTHONPATH=../../../scripts \
+  ../../../.venv/bin/python ../../../scripts/build_index.py --force
+QDRANT_COLLECTION=lfm PYTHONPATH=../../../scripts:../../../eval \
+  ../../../.venv/bin/python ../../../eval/run_eval.py \
+  --golden ../../../eval/golden_real.jsonl --k 5 \
+  --out ../../../eval/baselines/<date>-real.json
+```
 
 ## Use it on your own project
 

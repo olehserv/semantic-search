@@ -1,0 +1,93 @@
+.file-upload{
+    display: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.edit-personal-data__user-photo{
+    width: 200px;
+    max-height: 200px;
+    height: auto;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    margin-right: 15px;
+    overflow: hidden;
+}
+
+.scrollable-menu {
+    height: auto;
+    max-height: 250px;
+    overflow-x: hidden;
+}
+
+.mentors_photo{
+    width: 200px;
+    max-height: 200px;
+    height: auto;
+}
+
+.mentors_min_photo{
+    width: 80px;
+    max-height: 80px;
+    height: auto;
+}
+
+.switch_box{
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    max-width: 70px;
+    min-width: 5px;
+    -webkit-box-pack: start;
+    -ms-flex-pack: start;
+    justify-content: start;
+    -webkit-box-align: start;
+    -ms-flex-align: start;
+    align-items: start;
+    -webkit-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+}
+
+input[type="checkbox"].switch_1{
+    font-size: 15px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 4em;
+    height: 1.5em;
+    background: #dddddd;
+    border-radius: 3em;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    -webkit-transition: all .2s ease-in-out;
+    transition: all .2s ease-in-out;
+}
+
+input[type="checkbox"].switch_1:checked{
+    background: #12a500;
+}
+
+input[type="checkbox"].switch_1:after{
+    position: absolute;
+    content: "";
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    background: #fff;
+    -webkit-box-shadow: 0 0 .25em rgba(0,0,0,.3);
+    box-shadow: 0 0 .25em rgba(0,0,0,.3);
+    -webkit-transform: scale(.7);
+    transform: scale(.7);
+    left: 0;
+    -webkit-transition: all .2s ease-in-out;
+    transition: all .2s ease-in-out;
+}
+
+input[type="checkbox"].switch_1:checked:after{
+    left: calc(100% - 1.5em);
+}

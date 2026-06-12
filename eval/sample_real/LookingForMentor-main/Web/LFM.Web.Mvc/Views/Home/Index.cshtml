@@ -1,0 +1,23 @@
+﻿@using Lfm.Domain.ReadModels.SearchModels
+@{
+    ViewData["Title"] = "Головна";
+}
+
+<div class="text-center">
+    
+    <h4 class="mb-5">Looking For Mentor</h4>
+    
+    <div class="row">
+        <div class="mx-auto pb-5">
+            <partial name="_LookingForMentorsForm" model="@(new MentorsSearchModel())"/>
+        </div>
+    </div>
+    
+    <div>
+        Використовуючи сервіс LFM ви можете знайти підходящого вам викладача. 
+        Знаходьте викладача, оформлюйте заявку, чекайте відповіді та починайте роботу!
+        Також, ви можете стати викладачем. Для цього необхіно зареєструватись у нас на сайті як Викладач.
+    </div>
+
+
+</div>

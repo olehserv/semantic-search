@@ -1,0 +1,177 @@
+@using LFM.Core.Common.Extensions
+@using LFM.Domain.Read.Providers
+@using Lfm.Web.Mvc.App.StaticServices
+@using Lfm.Web.Mvc.App.UIRenderers
+@model Lfm.Web.Mvc.Models.MentorsListPageModel
+@inject IMasterDataProvider MasterDataProvider;
+
+@{
+    ViewData["Title"] = "Пошук викладачів";
+}
+
+<div>
+    <div class="row text-center mb-5">
+        <div class="col-lg-7 mx-auto">
+            <h1 class="display-5">Пошук викладачів</h1>
+        </div>
+    </div>
+    
+    <hr />
+    
+    <div class="row">
+        <div class="col-md-3">
+            <form asp-controller="Home" asp-action="LookingForMentors" method="get">
+                @{
+                    var lastSearchRequest = CommonStaticService.PullLastSearchMentorsRequest(Context);
+                }
+                <div class="form-group">
+                    <label>Предмет</label>
+                    @{
+                        var subjects = await MasterDataProvider.GetSubjectsList();
+                          <select name="SubjectId" class="form-control" style="max-height: 250px;">
+                              <option value="">---</option>
+                               @foreach (var s in subjects)
+                               {
+                                    if (Model.SearchModel.SubjectId.HasValue && s.Id == Model.SearchModel.SubjectId.Value)
+                                    {
+                                        <option value="@s.Id" selected>@s.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@s.Id">@s.Name</option>
+                                    }
+                                }
+                          </select>
+                    }
+                    
+                </div>
+                
+                
+                <div class="form-group">
+                    <label>Місце занять</label>
+                    <select name="StudyingPlace" class="form-control">
+                        <option value="">---</option>
+                        @foreach (var item in CommonUiRenderer.StudyingPlacesSelectItems(Model.SearchModel.StudyingPlace))
+                        {
+                            if (!string.IsNullOrWhiteSpace(item.Selected))
+                            {
+                                <option value="@(item.Value)" selected>@(item.Name)</option>
+                            }
+                            else
+                            {
+                                <option value="@(item.Value)">@(item.Name)</option>
+                            }
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Місто</label>
+                    @{
+                        var towns = await MasterDataProvider.GetTownsList();
+                        var firstFive = towns.Take(5).ToList();
+            
+                      <select name="TownId" class="form-control" style="max-height: 250px;">
+                          <option value="">---</option>
+                          @foreach (var t in firstFive)
+                          {
+                              if (Model.SearchModel.TownId.HasValue && Model.SearchModel.TownId.Value == t.Id)
+                              {
+                                  <option value="@t.Id" selected>@t.Name</option>
+                              }
+                              else
+                              {
+                                  <option value="@t.Id">@t.Name</option>
+                              }
+                          }
+                      </select>
+                    }
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Знайти</button>
+                </div>
+                
+            </form>
+        </div>
+        
+        <div class="col-md-9 mx-auto">
+            <ul class="list-group shadow">
+                        
+                @{
+                    if (Model.PageList.TotalCount == 0)
+                    {
+                        <li class="list-group-item">No data</li>
+                    }
+                    else
+                    {
+                        foreach (var mentor in Model.PageList)
+                        {
+                            <li class="list-group-item">
+                                <div class="media align-items-lg-center flex-column flex-lg-row p-3">
+                                    <div class="media-body order-2 order-lg-1">
+                                        <h5 class="mt-0 font-weight-bold mb-2">@mentor.Name</h5>
+                                        <p class="font-italic text-muted mb-0 small">@mentor.SubjectsList.Select(s => s.Name).ToSeparatedString(", ")</p>
+                                        <p class="font-italic text-muted mb-0 small">@CommonUiRenderer.StudyingPlaceToString(mentor.StudyingPlace)</p>
+                                        <h6 class="font-weight-bold my-2">@mentor.TownName</h6>
+                                        <a class="btn btn-sm btn-success stretched-link" asp-controller="Mentors" asp-action="MentorDetails" asp-route-mentorId="@mentor.MentorId">Details</a>
+                                    </div>
+                                    <img src="@Url.Action("GetMentorAvatar", "Images", new { mentorId = mentor.MentorId })" class="ml-lg-5 order-1 order-lg-2 mentors_photo" alt="@mentor.Name">
+                                </div>
+                            </li>
+                        }
+                    }
+                }
+            </ul>
+                    
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                            
+                    @{
+                        var routeData = Model.GetAllRouteData();
+                    }
+                            
+                    @if (Model.Pagination.PageNumber > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="Home" asp-action="LookingForMentors" asp-all-route-data="routeData" asp-route-pageNumber="1">&lt;&lt;</a>
+                        </li>
+                    }
+                            
+                    @foreach (var prev in Model.Pagination.GetNumbersAllPreviousPages())
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="Home" asp-action="LookingForMentors" asp-all-route-data="routeData" asp-route-pageNumber="@prev">@prev</a>
+                        </li>
+                    }
+            
+                            
+                    @if (Model.Pagination.PageNumber > 0)
+                    {
+                        <li class="page-item active">
+                            <a class="page-link">@Model.Pagination.PageNumber</a>
+                        </li>   
+                    }
+            
+            
+                    @foreach (var next in Model.Pagination.GetNumbersAllNextPages())
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="Home" asp-action="LookingForMentors" asp-all-route-data="routeData" asp-route-pageNumber="@next">@next</a>
+                        </li>
+                    }
+                            
+            
+                    @if (Model.Pagination.PageNumber < Model.Pagination.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="Home" asp-action="LookingForMentors" asp-all-route-data="routeData" asp-route-pageNumber="@(Model.Pagination.TotalPages)">>></a>
+                        </li>
+                    }
+            
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
