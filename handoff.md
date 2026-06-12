@@ -22,7 +22,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 | Area | State |
 |------|-------|
 | Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). Still destructive (deletes the collection first), no incremental mode. |
-| Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Still open for Phase 2: min-max fusion over mixed scales, and candidates cut before ranking. |
+| Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Fusion is RRF over ranks since task 2.1 (H1 fixed; candidates cut after fusion, so most of H2 too). |
 | Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host (first query 0.65 s, second 0.10 s — was ~30 s) **and in Docker** (2026-06-13): compose stack up, same top result + score as host, BM25 nodes loaded from Qdrant inside the container, warm queries 0.25 s, restart loads the model from the `hf_models` volume (no re-download), engine built once per process. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
 | Agent integration (`scripts/mcp_server.py`, `.mcp.json`) | **Real MCP server (Phase 1).** Official `mcp` SDK, FastMCP, stdio; one tool `search_codebase` that forwards to the service over HTTP with a timeout. Verified end-to-end with an MCP stdio client: initialize → tools/list → tools/call returns ranked results; service down → structured `{"error", "hint"}`. Legacy `mcp.json` deleted. |
@@ -70,11 +70,12 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge the Phase 2 baselines PR** (branch `phase-2-baselines`):
-   real-project golden set + recorded baseline reports.
-2. **Phase 2 tuning** (eval-gated, one change per PR): RRF fusion (2.1), cut
-   after scoring (2.2), configurable query variants (2.3), code-aware
-   chunking (2.4). Each change must beat the recorded baseline in
+1. **Review + merge the RRF fusion PR** (branch `phase-2-rrf-fusion`):
+   eval gate passed, numbers in the status log.
+2. **Phase 2 tuning, next tasks** (eval-gated, one change per PR):
+   check whether the post-re-rank cut still hurts (2.2 remainder),
+   configurable query variants (2.3), code-aware
+   chunking (2.4). Each change must beat the recorded numbers in
    `eval/baselines/`.
 
 ## How to verify the project right now
@@ -87,6 +88,17 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-13 (task 2.1 — RRF fusion)** — Min-max score mixing replaced by
+  Reciprocal Rank Fusion (finding H1): `rrf_scores()` in `ranking.py` fuses
+  the 9 ranked lists (3 retrievers × 3 query variants, original query
+  weighted 1.5) by rank only; `score_candidates()` now blends
+  `alpha * cosine + (1 - alpha) * RRF`. The old `freq_boost` and
+  `make_normalizer` are gone (RRF covers both), and the top-30 candidate cut
+  happens after fusion instead of arrival order (most of H2). **Eval gate
+  passed:** real project Recall@5 0.600 → **0.787**, MRR 0.263 → **0.526**,
+  nDCG@5 0.343 → **0.585** (`eval/baselines/2026-06-13-real-rrf.json`);
+  sample corpus stays 1.000. 47 tests green. Also: LookingForMentor is now
+  committed to the repo (Oleh, PR #3 follow-up) — docs updated.
 - **2026-06-13 (Phase 2 baselines)** — Real .NET project (LookingForMentor,
   ~238 .cs files, CQRS + Blazor) added by Oleh at `eval/sample_real/`
   (gitignored). `QDRANT_COLLECTION` env var added (default `demo`), so the
