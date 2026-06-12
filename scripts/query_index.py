@@ -5,7 +5,6 @@ from llama_index.core.vector_stores.utils import metadata_dict_to_node
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.core import VectorStoreIndex
-from collections import defaultdict
 
 import os
 import sys
@@ -24,7 +23,7 @@ print = functools.partial(print, file=sys.stderr, flush=True)
 # noise cannot contaminate the JSON on stdout.
 import model_setup  # noqa: E402, F401
 import qdrant  # noqa: E402
-from ranking import expand_query, score_candidates  # noqa: E402
+from ranking import expand_query, rrf_scores, score_candidates  # noqa: E402
 
 EMB_CACHE_PATH = "./.claude/cache/embeddings.pkl"
 
@@ -137,17 +136,18 @@ def build_query_engine():
 _retrieve_cache = {}
 
 def hybrid_retrieve(query, vector, bm25, vector_wide):
+    """Run the three retrievers; return one ranked result list per retriever
+    (RRF fuses by rank, so the lists must stay separate)."""
     if query in _retrieve_cache:
         return _retrieve_cache[query]
 
-    results = []
     print(f"[DEBUG] [{datetime.now()}] hybrid_retrieve start for query '{query}'")
     print(f"[DEBUG] [{datetime.now()}] vector.retrieve")
-    results.extend(vector.retrieve(query))
+    results = [vector.retrieve(query)]
     print(f"[DEBUG] [{datetime.now()}] bm25.retrieve")
-    results.extend(bm25.retrieve(query))
+    results.append(bm25.retrieve(query))
     print(f"[DEBUG] [{datetime.now()}] vector_wide.retrieve")
-    results.extend(vector_wide.retrieve(query))
+    results.append(vector_wide.retrieve(query))
     print(f"[DEBUG] [{datetime.now()}] hybrid_retrieve end for query '{query}'")
 
     _retrieve_cache[query] = results
@@ -177,37 +177,36 @@ def get_embedding(text, embed_model):
 
     return _embedding_cache[text]
 
-def query(q, alpha=0.7, freq_weight=0.1, top_k=8):
+def query(q, alpha=0.7, top_k=8):
     print(f"[DEBUG] [{datetime.now()}] query(): get_engine")
-    
+
     vector, bm25, vector_wide = get_engine()
 
     queries = expand_query(q)
-    
-    all_nodes = []
-    node_counts = defaultdict(int)
+
+    # One ranked id-list per (variant, retriever) pair; the original query's
+    # lists weigh more, like the old frequency boost did.
+    ranked_lists = []
+    list_weights = []
+    nodes_by_id = {}
 
     print(f"[DEBUG] [{datetime.now()}] query(): gather nodes START")
     for sub_q in queries:
-        if sub_q == q:
-            weight = 1.5
-        else:
-            weight = 1.0
+        weight = 1.5 if sub_q == q else 1.0
+        for retriever_results in hybrid_retrieve(sub_q, vector, bm25, vector_wide):
+            ranked_lists.append([n.node_id for n in retriever_results])
+            list_weights.append(weight)
+            for n in retriever_results:
+                nodes_by_id.setdefault(n.node_id, n)
 
-        nodes = hybrid_retrieve(sub_q, vector, bm25, vector_wide)
-        for n in nodes:
-            node_counts[n.node_id] += weight
-            all_nodes.append(n)
+    # RRF fuses by rank only, so cosine and BM25 scales cannot clash (H1).
+    fused = rrf_scores(ranked_lists, weights=list_weights)
 
-    seen = set()
-    ordered_nodes = []
-
-    for n in all_nodes:
-        if n.node_id not in seen:
-            seen.add(n.node_id)
-            ordered_nodes.append(n)
-
-    ordered_nodes = ordered_nodes[:30]
+    # The candidate cut now happens AFTER fusion: the 30 best fused nodes go
+    # to the embedding re-rank, instead of the first 30 in arrival order.
+    ordered_nodes = sorted(
+        nodes_by_id.values(), key=lambda n: fused[n.node_id], reverse=True
+    )[:30]
 
     print(f"Candidates: {len(ordered_nodes)}")
     print(f"[DEBUG] [{datetime.now()}] query(): gather nodes END")
@@ -231,8 +230,7 @@ def query(q, alpha=0.7, freq_weight=0.1, top_k=8):
 
     print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks START")
     scored = score_candidates(
-        ordered_nodes, node_counts, query_emb, text_embeddings,
-        alpha=alpha, freq_weight=freq_weight,
+        ordered_nodes, fused, query_emb, text_embeddings, alpha=alpha,
     )
     ranked = sorted(scored, key=lambda x: x[1], reverse=True)
     print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks END")

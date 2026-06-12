@@ -1,0 +1,113 @@
+{
+  "per_query": [
+    {
+      "query": "where is the user password verified at login",
+      "retrieved": [
+        "AuthService.cs",
+        "AppDbContext.cs",
+        "EmailService.cs",
+        "OrdersController.cs",
+        "Program.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "how is the database context configured",
+      "retrieved": [
+        "AppDbContext.cs",
+        "Program.cs",
+        "AuthService.cs",
+        "OrdersController.cs",
+        "EmailService.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "where are new orders created through the API",
+      "retrieved": [
+        "OrdersController.cs",
+        "EmailService.cs",
+        "AppDbContext.cs",
+        "Program.cs",
+        "AuthService.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "where are confirmation emails sent over SMTP",
+      "retrieved": [
+        "EmailService.cs",
+        "OrdersController.cs",
+        "AuthService.cs",
+        "Program.cs",
+        "AppDbContext.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "where is dependency injection configured at startup",
+      "retrieved": [
+        "Program.cs",
+        "AppDbContext.cs",
+        "OrdersController.cs",
+        "EmailService.cs",
+        "AuthService.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "how is the HTTP middleware request pipeline set up",
+      "retrieved": [
+        "Program.cs",
+        "AppDbContext.cs",
+        "OrdersController.cs",
+        "EmailService.cs",
+        "AuthService.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "how are entity foreign keys and relationships defined",
+      "retrieved": [
+        "AppDbContext.cs",
+        "EmailService.cs",
+        "Program.cs",
+        "OrdersController.cs",
+        "AuthService.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    },
+    {
+      "query": "what happens when a customer places an order",
+      "retrieved": [
+        "OrdersController.cs",
+        "EmailService.cs",
+        "AuthService.cs",
+        "AppDbContext.cs",
+        "Program.cs"
+      ],
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@5": 1.0
+    }
+  ],
+  "summary": {
+    "recall@5": 1.0,
+    "mrr": 1.0,
+    "ndcg@5": 1.0
+  }
+}

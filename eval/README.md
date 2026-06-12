@@ -23,7 +23,7 @@ from, and compares them with the files that are known to be correct.
 | `golden.jsonl` | The labelled set: one `{"query", "relevant_files"}` per line |
 | `golden_real.jsonl` | 40 questions for the real project in `sample_real/` (see below) |
 | `sample_corpus/` | A small fake .NET app, so the demo works alone |
-| `sample_real/` | A real .NET project for honest numbers (**gitignored** — drop a codebase here yourself) |
+| `sample_real/` | A real .NET project (LookingForMentor) for honest numbers — ships with the repo |
 | `baselines/` | Recorded eval reports; Phase 2 changes must beat these numbers |
 | `run_demo.sh` | One command: venv + Qdrant + index the corpus + run the eval |
 
@@ -43,7 +43,7 @@ collection.
 ## The real-project baseline
 
 `golden_real.jsonl` holds 40 questions about the LookingForMentor project
-(a .NET CQRS + Blazor app in `sample_real/`, gitignored). The labels use
+(a .NET CQRS + Blazor app in `sample_real/`, part of the repo). The labels use
 file names that exist exactly once in that project (`ErrorHandlingMiddleware.cs`
 exists twice, but both copies are correct answers). To reproduce the baseline:
 
