@@ -6,7 +6,7 @@ import os
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 
-COLLECTION_NAME = "demo"
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "demo")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
