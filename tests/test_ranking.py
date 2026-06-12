@@ -27,8 +27,20 @@ def dict_scores(scored):
 def test_expand_query_keeps_original_first():
     variants = expand_query("where is auth")
     assert variants[0] == "where is auth"
-    assert len(variants) == 3
-    assert all("where is auth" in v for v in variants)
+    assert variants == ["where is auth", "where is auth implementation"]
+
+
+def test_expand_query_custom_suffixes():
+    variants = expand_query("find orders", suffixes=("impl", "C# backend"))
+    assert variants == [
+        "find orders",
+        "find orders impl",
+        "find orders C# backend",
+    ]
+
+
+def test_expand_query_no_suffixes_gives_only_original():
+    assert expand_query("plain", suffixes=()) == ["plain"]
 
 
 # ── cosine ───────────────────────────────────────────────────────────────────

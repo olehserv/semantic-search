@@ -21,6 +21,7 @@ services:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - QDRANT_AUTOSTART=0
+      - QUERY_VARIANT_SUFFIXES=${QUERY_VARIANT_SUFFIXES:-implementation}
       - HF_HOME=/models
     volumes:
       - hf_models:/models

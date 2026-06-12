@@ -51,11 +51,17 @@ exists twice, but both copies are correct answers). To reproduce the baseline:
 cd eval/sample_real/LookingForMentor-main
 QDRANT_COLLECTION=lfm PYTHONPATH=../../../scripts \
   ../../../.venv/bin/python ../../../scripts/build_index.py --force
-QDRANT_COLLECTION=lfm PYTHONPATH=../../../scripts:../../../eval \
+QUERY_VARIANT_SUFFIXES="implementation,.NET core backend" \
+  QDRANT_COLLECTION=lfm PYTHONPATH=../../../scripts:../../../eval \
   ../../../.venv/bin/python ../../../eval/run_eval.py \
   --golden ../../../eval/golden_real.jsonl --k 5 \
   --out ../../../eval/baselines/<date>-real.json
 ```
+
+The recorded numbers use the `.NET core backend` variant suffix — it is a
+domain hint that measurably helps on this .NET corpus (without it:
+Recall@5 0.738 vs 0.787). Keep it set when comparing against the
+baselines, or the comparison is unfair.
 
 ## Use it on your own project
 
