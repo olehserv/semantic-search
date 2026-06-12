@@ -4,10 +4,9 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-12 (Phase 1 done)
-**Repo state:** branch `phase-1-search-service`, pushed; PR open against
-`main`: https://github.com/olehserv/semantic-search/pull/2
-(PR #1 / Phase 0 is merged.)
+**Last updated:** 2026-06-13 (Phase 2 baselines)
+**Repo state:** branch `phase-2-baselines`. PR #1 (Phase 0) and PR #2
+(Phase 1) are merged into `main`.
 
 ---
 
@@ -27,7 +26,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 | Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host (first query 0.65 s, second 0.10 s — was ~30 s) **and in Docker** (2026-06-13): compose stack up, same top result + score as host, BM25 nodes loaded from Qdrant inside the container, warm queries 0.25 s, restart loads the model from the `hf_models` volume (no re-download), engine built once per process. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
 | Agent integration (`scripts/mcp_server.py`, `.mcp.json`) | **Real MCP server (Phase 1).** Official `mcp` SDK, FastMCP, stdio; one tool `search_codebase` that forwards to the service over HTTP with a timeout. Verified end-to-end with an MCP stdio client: initialize → tools/list → tools/call returns ranked results; service down → structured `{"error", "hint"}`. Legacy `mcp.json` deleted. |
-| Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 34 passing unit tests (heavy tests skip without the ML stack), end-to-end demo. Demo checked 2026-06-11: 1.000 on all metrics for the 8 toy questions. |
+| Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 34 passing unit tests (heavy tests skip without the ML stack), end-to-end demo. Demo checked 2026-06-11: 1.000 on all metrics for the 8 toy questions — the toy set is saturated. A real .NET project (LookingForMentor) now sits in `eval/sample_real/` (gitignored) with its own golden set `eval/golden_real.jsonl`; baseline reports live in `eval/baselines/`. |
 | Dependencies | `requirements.txt` (pinned, now incl. `flask`, `mcp`) + `requirements-dev.txt`; `eval/requirements-eval.txt` points to the root file. Local `.venv/` gitignored. |
 | CI | GitHub Actions: ruff + py_compile + pytest (+ `requests`, so the MCP shim tests run). Heavy tests skip without the ML stack. |
 | Docs | `README.md` is current (service + MCP usage). The 2026-06-01 service design is **implemented** (status noted in the spec). |
@@ -55,8 +54,10 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 ## Known risks
 
 - `eval/run_demo.sh` rebuilds the Qdrant collection named in
-  `scripts/qdrant.py` (`COLLECTION_NAME = "demo"`) — **it will delete a real
-  index** that uses the same name.
+  `scripts/qdrant.py` — **it will delete a real index** that uses the same
+  name. The name is now env-driven (`QDRANT_COLLECTION`, default `demo`), so
+  keep real indexes in their own collection (the LookingForMentor index uses
+  `lfm`).
 - If you change the embedding model without deleting
   `./.claude/cache/embeddings.pkl`, old and new vectors get mixed silently
   (finding H3).
@@ -69,11 +70,12 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge PR #2** (Phase 1, now incl. container verification):
-   https://github.com/olehserv/semantic-search/pull/2
-2. **Phase 2** (eval-gated): record baselines, then RRF fusion (2.1), cut
+1. **Review + merge the Phase 2 baselines PR** (branch `phase-2-baselines`):
+   real-project golden set + recorded baseline reports.
+2. **Phase 2 tuning** (eval-gated, one change per PR): RRF fusion (2.1), cut
    after scoring (2.2), configurable query variants (2.3), code-aware
-   chunking (2.4), golden set → 30–50 questions (2.5).
+   chunking (2.4). Each change must beat the recorded baseline in
+   `eval/baselines/`.
 
 ## How to verify the project right now
 
@@ -85,6 +87,16 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-13 (Phase 2 baselines)** — Real .NET project (LookingForMentor,
+  ~238 .cs files, CQRS + Blazor) added by Oleh at `eval/sample_real/`
+  (gitignored). `QDRANT_COLLECTION` env var added (default `demo`), so the
+  real index lives in its own collection `lfm` and the demo stays safe.
+  Wrote `eval/golden_real.jsonl` (40 questions; labels verified unique by
+  file name). Indexed (261 docs → 335 nodes) and recorded baselines in
+  `eval/baselines/`: **real project Recall@5 0.600, MRR 0.263, nDCG@5
+  0.343** (`2026-06-13-real.json`); sample corpus still 1.000 on all
+  metrics (`2026-06-13-sample.json`, saturated). These are the numbers
+  Phase 2 tasks 2.1–2.4 must beat.
 - **2026-06-13 (container verification)** — Compose plugin installed (v5.1.1)
   by Oleh; Phase 1's deferred step finished. Dockerfile fixed to install CPU
   torch (the PyPI default is the multi-GB CUDA build); obsolete `version:`
