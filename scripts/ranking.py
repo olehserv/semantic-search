@@ -1,10 +1,14 @@
 """Pure ranking/fusion math for the hybrid retrieval pipeline.
 
 Depends only on numpy — no LlamaIndex, no models — so scoring behavior is
-unit-testable without the ML stack, and retrieval-quality changes (e.g. the
-planned RRF fusion, production plan Phase 2) stay isolated in one module.
+unit-testable without the ML stack, and retrieval-quality changes stay
+isolated in one module.
 """
 import numpy as np
+
+# Standard RRF dampening constant: with k=60 the gap between rank 1 and
+# rank 2 is small, so one retriever cannot dominate the fusion.
+RRF_K = 60
 
 
 def expand_query(q):
@@ -28,48 +32,49 @@ def cosine(a, b):
     return np.dot(a, b) / (norm_a * norm_b)
 
 
-def make_normalizer(min_s, max_s):
-    def normalize(x):
-        if max_s - min_s == 0:
-            return 0.0
-        return (x - min_s) / (max_s - min_s)
-    return normalize
+def rrf_scores(ranked_lists, weights=None, k=RRF_K):
+    """Reciprocal Rank Fusion over several ranked lists of node ids.
+
+    Uses only the *rank* of a node inside each list, never the raw retriever
+    score, so cosine (0-1) and BM25 (unbounded) lists fuse fairly.
+
+    ranked_lists : list of lists of node ids, best result first
+    weights      : optional per-list weight (default 1.0 for every list)
+    k            : dampening constant; each list adds weight / (k + rank)
+
+    Returns {node_id: fused_score}, scaled so that rank 1 in every list
+    gives exactly 1.0.
+    """
+    if not ranked_lists:
+        return {}
+    if weights is None:
+        weights = [1.0] * len(ranked_lists)
+
+    fused = {}
+    for ids, weight in zip(ranked_lists, weights):
+        for rank, node_id in enumerate(ids, start=1):
+            fused[node_id] = fused.get(node_id, 0.0) + weight / (k + rank)
+
+    best_possible = sum(w / (k + 1) for w in weights)
+    return {nid: s / best_possible for nid, s in fused.items()}
 
 
-def score_candidates(nodes, node_counts, query_emb, text_embeddings,
-                     alpha=0.7, freq_weight=0.1):
-    """Fuse the retrieval signals into one score per candidate node.
+def score_candidates(nodes, fused_scores, query_emb, text_embeddings,
+                     alpha=0.7):
+    """Blend the RRF fusion with an embedding re-rank into one final score.
 
-    final = alpha * cosine(query, chunk)
-          + (1 - alpha) * min-max-normalized retriever score
-          + freq_weight * log-scaled retrieval frequency
+    final = alpha * cosine(query, chunk) + (1 - alpha) * fused RRF score
 
-    nodes           : candidates exposing .node_id and .score (score may be None)
-    node_counts     : node_id -> (weighted) number of times retrieved
+    nodes           : candidate nodes exposing .node_id
+    fused_scores    : node_id -> RRF score from rrf_scores()
     query_emb       : embedding of the original query
     text_embeddings : node_id -> embedding of the chunk text
 
     Returns [(node, final_score), ...] in input order (not sorted).
-
-    Known limitation (review finding H1, plan item 2.1): the min-max
-    normalization pools cosine and BM25 scores, whose scales differ wildly.
     """
-    retriever_scores = [float(n.score) for n in nodes if n.score is not None]
-    normalize = make_normalizer(
-        min(retriever_scores) if retriever_scores else 0,
-        max(retriever_scores) if retriever_scores else 1,
-    )
-    max_count = max(node_counts.values()) if node_counts else 1
-
     scored = []
     for n in nodes:
         emb_score = cosine(query_emb, text_embeddings[n.node_id])
-        retriever_score = normalize(float(n.score)) if n.score is not None else 0.0
-        freq_boost = np.log1p(node_counts[n.node_id]) / np.log1p(max_count)
-        final_score = (
-            alpha * emb_score +
-            (1 - alpha) * retriever_score +
-            freq_weight * freq_boost
-        )
-        scored.append((n, final_score))
+        rrf_score = fused_scores.get(n.node_id, 0.0)
+        scored.append((n, alpha * emb_score + (1 - alpha) * rrf_score))
     return scored
