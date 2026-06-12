@@ -4,9 +4,10 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (Phase 2 baselines)
-**Repo state:** branch `phase-2-baselines`. PR #1 (Phase 0) and PR #2
-(Phase 1) are merged into `main`.
+**Last updated:** 2026-06-13 (task 2.4 — code-aware chunking)
+**Repo state:** branch `phase-2-code-chunking`. Merged into `main` so far:
+PR #1 (Phase 0), PR #2 (Phase 1), PR #3 (baselines), PR #4 (RRF, task 2.1),
+PR #5 (query variants, task 2.3).
 
 ---
 
@@ -21,7 +22,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 | Area | State |
 |------|-------|
-| Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). Still destructive (deletes the collection first), no incremental mode. |
+| Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). C# files get code-aware chunks from `scripts/chunking.py` (task 2.4, tree-sitter); other files keep the `SentenceSplitter`. Still destructive (deletes the collection first), no incremental mode. |
 | Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Fusion is RRF over ranks since task 2.1 (H1 fixed; candidates cut after fusion, so most of H2 too). |
 | Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host (first query 0.65 s, second 0.10 s — was ~30 s) **and in Docker** (2026-06-13): compose stack up, same top result + score as host, BM25 nodes loaded from Qdrant inside the container, warm queries 0.25 s, restart loads the model from the `hf_models` volume (no re-download), engine built once per process. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
@@ -70,12 +71,13 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge the query-variants PR** (branch
-   `phase-2-query-variants`): config extraction, behavior-preserving when
-   configured; numbers in the status log.
-2. **Phase 2 tuning, next tasks** (eval-gated, one change per PR):
-   code-aware chunking (2.4, expected biggest win), then check whether the
-   post-re-rank cut still hurts (2.2 remainder), optional re-ranker (2.6).
+1. **Review + merge the code-aware chunking PR** (branch
+   `phase-2-code-chunking`): eval gate passed with the biggest win so far;
+   numbers in the status log.
+2. **Phase 2 remaining** (eval-gated, one change per PR): check whether the
+   post-re-rank cut still hurts (2.2 remainder), optional cross-encoder
+   re-ranker (2.6). Phase 2's "done when" (clearly above baseline, report
+   per change) is close — consider closing Phase 2 and starting Phase 3.
    Each change must beat the recorded numbers in
    `eval/baselines/`.
 
@@ -89,6 +91,16 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-13 (task 2.4 — code-aware chunking)** — New `scripts/chunking.py`
+  (tree-sitter + tree-sitter-c-sharp, pinned): C# files are cut on
+  type/member borders, signatures stay with bodies, every chunk carries
+  namespace/type/member metadata and a `// namespace …` header line; nested
+  big types recurse, oversized members line-split, parse failures fall back
+  to the old `SentenceSplitter` (all 238 real files parse — zero fallbacks).
+  **Eval gate passed, biggest win so far:** real project Recall@5
+  0.787 → **0.912**, MRR 0.526 → **0.716**, nDCG@5 0.585 → **0.760**
+  (`2026-06-13-real-chunking.json`); sample corpus rebuilt, stays 1.000.
+  Both collections re-indexed (330 nodes for `lfm`). 55 tests green.
 - **2026-06-13 (task 2.3 — configurable query variants)** — The hard-coded
   `".NET core backend"` suffix is gone from `expand_query()` (H7 part);
   variants now come from the `QUERY_VARIANT_SUFFIXES` env var (default

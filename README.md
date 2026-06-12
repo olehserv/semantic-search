@@ -106,7 +106,7 @@ shim needs nothing else — no torch, no llama-index).
 | Embedding model / device, LLM model | `model_setup.py` |
 | Qdrant host / port / collection name | `qdrant.py` |
 | Which file types are indexed | `build_index.py` (`load_documents`) |
-| Chunk size / overlap | `build_index.py` (`SentenceSplitter`) |
+| Chunking | `chunking.py` — C# files are cut on type/method borders with tree-sitter (namespace/class metadata on every chunk); other files use the `SentenceSplitter` in `build_index.py` |
 | Search depth, score weights | `query_index.py` / `ranking.py` |
 | Query variants | `QUERY_VARIANT_SUFFIXES` env var (comma-separated, default `implementation`). Add domain terms for your codebase, e.g. `implementation,.NET core backend` |
 
