@@ -1,0 +1,36 @@
+﻿@using Lfm.Admin.Blazor.App.Routes
+<div class="top-row pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href="">Admin Portal</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="@AdminRoutesMap.Managers">
+                <span class="oi oi-people" aria-hidden="true"></span> Менеджери
+            </NavLink>
+        </li>
+
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="@AdminRoutesMap.ManagersToCreate">
+                <span class="oi oi-pencil" aria-hidden="true"></span> Створення Менеджера
+            </NavLink>
+        </li>
+
+    </ul>
+</div>
+
+@code {
+    private bool _collapseNavMenu = true;
+
+    private string NavMenuCssClass => _collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        _collapseNavMenu = !_collapseNavMenu;
+    }
+}

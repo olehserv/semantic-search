@@ -1,0 +1,71 @@
+﻿@page "/reviewingToDos"
+@using Lfm.Domain.Manager.Services.DataProviders
+@using Lfm.Manager.Blazor.App.Models
+@using Lfm.Domain.Manager.Models.ReviewModels
+@using Lfm.Domain.Manager.Models.SearchModel
+@using Lfm.Core.Common.Web.Models
+@using Lfm.Domain.Common.Extensions
+@using Lfm.Web.Manager.Blazor.Components;
+@inject NavigationManager UriHelper
+@inject IToDoProvider Provider;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h1>Запити на перегляді</h1>
+
+@if (PM == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Код операції</th>
+            <th>Створено корситувачем</th>
+            <th>Час створення</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var todo in PM.PageList)
+        {
+            <tr>
+                <td><button class="btn btn-link btn-sm btn-outline-primary" @onclick="(() => ReviewingToDoDetails(todo.Id))">@todo.Id</button></td>
+                <td>@todo.OperationCode</td>
+                <td>@todo.CreatedByUser</td>
+                <td>@todo.CreatedDateTime</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    
+    <Pagination Model="@PM.Pagination" GoToPageFunc="@RefreshTable"/>
+}
+
+@code
+{
+    BaseListPageModel<ToDoReviewModel> PM;
+
+    protected override async void OnInitialized()
+    {
+        await RefreshTable();
+        await base.OnInitializedAsync();
+    }
+    
+    void ReviewingToDoDetails(int toDoId)
+    {
+        UriHelper.NavigateTo($"/reviewingToDo/{toDoId}");
+    }
+
+    private async Task RefreshTable(int pageNumber = 1)
+    {
+        var userId = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.GetId();
+        
+        var toDos = await Provider.GetReviewingToDos(pageNumber <= 0 ? 1 : pageNumber, userId, 2);
+        PM = new BaseListPageModel<ToDoReviewModel>(toDos, 2);
+        StateHasChanged();
+    }
+}

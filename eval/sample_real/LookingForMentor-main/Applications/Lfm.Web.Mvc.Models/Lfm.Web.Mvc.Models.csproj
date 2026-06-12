@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Lfm.Web.Mvc.Models</RootNamespace>
+    <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Lfm.Core.Common.Web\Lfm.Core.Common.Web.csproj" />
+    <ProjectReference Include="..\..\Core\LFM.Core.Common\LFM.Core.Common.csproj" />
+    <ProjectReference Include="..\..\DataAccess\LFM.DataAccess.DB.Core\LFM.DataAccess.DB.Core.csproj" />
+    <ProjectReference Include="..\..\Domain\CQRS\Lfm.Domain.ReadModels\Lfm.Domain.ReadModels.csproj" />
+  </ItemGroup>
+
+</Project>

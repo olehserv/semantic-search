@@ -1,0 +1,72 @@
+﻿@using Lfm.Core.Common.Web.SessionAlerts
+@using Lfm.Web.Mvc.App.UIRenderers
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/main.css" />
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <div class="container">
+            <a class="navbar-brand" asp-controller="Home" asp-action="Index">Looking for Mentors</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <ul class="navbar-nav flex-grow-1">
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" asp-controller="Home" asp-action="LookingForMentors">Викладачі</a>
+                    </li>
+                </ul>
+                <partial name="_LoginPartial" />
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    @{
+        List<AlertDataModel> alerts= this.RetrieveAlerts();
+        if (alerts?.Count > 0)
+        {
+            <div style="position: absolute; top: 0; right: 0;">
+
+                @foreach (AlertDataModel alert in alerts)
+                {
+                    <div class="toast bg-@AlertUiRenderer.GetAlertCssColorClassName(alert)" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+                        <div class="toast-header">
+                            <strong class="mr-auto">@AlertUiRenderer.RetrieveAlertName(alert)</strong>
+                            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="toast-body">
+                            @alert.Message
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+</div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2021 - LFM.Web
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>

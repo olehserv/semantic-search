@@ -1,0 +1,103 @@
+﻿@page "/pendingToDos"
+@using Lfm.Domain.Manager.Services.DataProviders
+@using Lfm.Manager.Blazor.App.Models
+@using Lfm.Domain.Manager.Models.ReviewModels
+@using Lfm.Domain.Manager.Models.SearchModel
+@using Lfm.Web.Manager.Blazor.Components;
+@inject IToDoProvider Provider;
+@inject NavigationManager UriHelper
+
+<h1>Запити на підтвердження</h1>
+
+@if (PM == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <div class="btn-group">
+        <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Операції
+        </button>
+        <div class="dropdown-menu">
+            @foreach (var o in _operations)
+            {
+                <a class="dropdown-item" @onclick="(() => RefreshTable(o.Id, PM.SearchModel.UserId))">@o.Name</a>
+            }
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" @onclick="(() => RefreshTable(null, PM.SearchModel.UserId))">Всі</a>
+        </div>
+    </div>
+    
+    <div class="btn-group">
+        <button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Користувачі
+        </button>
+        <div class="dropdown-menu">
+            @foreach (var u in _users)
+            {
+                <a class="dropdown-item" @onclick="(() => RefreshTable(PM.SearchModel.OperationId, u.Id))">@u.Email</a>
+            }
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" @onclick="(() => RefreshTable(PM.SearchModel.OperationId, null))">Всі</a>
+        </div>
+    </div>
+    
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Код операції</th>
+            <th>Створено корситувачем</th>
+            <th>Час створення</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var todo in PM.PageList)
+        {
+            <tr>
+                <td><button class="btn btn-link btn-sm btn-outline-primary" @onclick="(() => PendingToDoDetails(todo.Id))">@todo.Id</button></td>
+                <td>@todo.OperationCode</td>
+                <td>@todo.CreatedByUser</td>
+                <td>@todo.CreatedDateTime</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <Pagination Model="@PM.Pagination" GoToPageFunc="@(p => RefreshTable(PM.SearchModel, p))"/>
+}
+@code
+{
+    PendingToDosListPageModel PM;
+
+    ICollection<OperationReviewModel> _operations;
+    ICollection<ToDoUserReviewModel> _users;
+    
+    protected override async void OnInitialized()
+    {
+        _operations = await Provider.GetPerformingOperations();
+        _users = await Provider.GetPerformingUsers();
+
+        await RefreshTable(null, null);
+        await base.OnInitializedAsync();
+    }
+
+    void PendingToDoDetails(int toDoId)
+    {
+        UriHelper.NavigateTo($"/pendingToDo/{toDoId}");
+    }
+    
+    private async Task RefreshTable(SearchToDosModel searchModel = null, int pageNumber = 1) =>
+        await RefreshTable(searchModel?.OperationId, searchModel?.UserId, pageNumber);
+    
+    private async Task RefreshTable(int? operationId = null, int? userId = null, int pageNumber = 1)
+    {
+        var searchModel = new SearchToDosModel(operationId, userId);
+        var toDos = await Provider.SearchPendingToDos(searchModel, pageNumber <= 0 ? 1 : pageNumber, 2);
+        PM = new PendingToDosListPageModel(toDos, searchModel, 2);
+        StateHasChanged();
+    }
+}

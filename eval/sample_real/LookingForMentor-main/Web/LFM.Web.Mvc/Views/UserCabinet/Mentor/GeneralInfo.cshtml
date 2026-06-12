@@ -1,0 +1,75 @@
+@using Lfm.Domain.Common.Extensions
+@using Lfm.Web.Mvc.App.UIRenderers
+@using Microsoft.AspNetCore.Identity
+@using LFM.DataAccess.DB.Core.Entities
+@model Lfm.Domain.ReadModels.ReviewModels.MentorProfile.MentorProfilePreviewModel
+
+@inject UserManager<LfmUser> UserManager;
+@{
+    ViewData["Title"] = "Мій профіль";
+    Layout = "../_UserCabinetLayout.cshtml";
+}
+
+<h4 class="mb-3 col-md-12">Мій профіль</h4>
+
+<div class="mb-3 col-md-8">
+    Заповніть усю інформацію вашого профілю для того, щоб учні могли його бачити і відправляти вам персональні заявки, та для того, 
+    щоб ви могли висувати свою кандидатуру на вільні заявки учнів.
+    Також, вам необхідно буде добавити хоча б один предмет. Ви можете це зробити на сторінці ваших предметів, натиснувши на кнопку "Додати предмет".
+</div>
+
+<div class="col-md-8">
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <img src="@Url.Action("GetMentorAvatar", "Images", new { mentorId = Context.User.GetId() })" class="profile-pic" alt="">
+    </div>
+    
+    @if (Model.WantReceivePersonalOrders)
+    {
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <button class="btn-outline-success" disabled>Анкета активна (ви можете отримувати персональні заявки від учнів)</button>
+        </div>
+    }
+    else
+    {
+        <div class="list-group-item flex-column align-items-start border-dark">
+            <button class="btn-outline-secondary" disabled>Анкета неактивна (ви не можете отримувати персональні заявки від учнів)</button>
+        </div>
+    }
+    
+
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Ініціали</label>
+        <hr>
+        <p>@Model.Surname @(await UserManager.GetName(User)) @Model.MiddleName</p>
+    </div>
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Про мене</label>
+        <hr>
+        <p>@Model.AboutMe</p>
+    </div>
+
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Місто</label>
+        <hr>
+        <p>@Model.TownName</p>
+    </div>
+    
+
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Де я можу проводити заняття</label>
+        <hr>
+        <p>@CommonUiRenderer.StudyingPlaceToString(Model.StudyingPlace)</p>
+    </div>
+    
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Моя освіта</label>
+        <hr>
+        <p>@Model.Education</p>
+    </div>
+    
+    <a class="page-link border-info btn btn-primary" asp-controller="MentorUserCabinet" asp-action="EditGeneralInfo">Редагувати інформацію...</a>
+</div>
+

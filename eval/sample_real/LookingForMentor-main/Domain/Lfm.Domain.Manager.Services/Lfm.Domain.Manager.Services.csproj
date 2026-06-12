@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CQRS\LFM.Domain.Write\LFM.Domain.Write.csproj" />
+      <ProjectReference Include="..\Lfm.Domain.Common\Lfm.Domain.Common.csproj" />
+      <ProjectReference Include="..\Lfm.Domain.Manager.Models\Lfm.Domain.Manager.Models.csproj" />
+    </ItemGroup>
+
+</Project>

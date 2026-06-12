@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Lfm.Core.Common.Web\Lfm.Core.Common.Web.csproj" />
+      <ProjectReference Include="..\..\DataAccess\LFM.DataAccess.DB.SQLite\LFM.DataAccess.DB.SQLite.csproj" />
+      <ProjectReference Include="..\..\Domain\Lfm.Domain.Common\Lfm.Domain.Common.csproj" />
+      <ProjectReference Include="..\..\Domain\Lfm.Domain.Manager.Services\Lfm.Domain.Manager.Services.csproj" />
+      <ProjectReference Include="..\Lfm.Common.Blazor.App\Lfm.Common.Blazor.App.csproj" />
+    </ItemGroup>
+
+</Project>

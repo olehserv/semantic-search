@@ -1,0 +1,130 @@
+﻿@page "/managers"
+@using Lfm.Domain.Admin.Services.DataProviders
+@using Lfm.Core.Common.Web.Models
+@using Lfm.Domain.Admin.Models.ReviewModels
+@using Lfm.Domain.Admin.Services.DataWriters
+@inject IManagersProvider ManagersProvider;
+@inject IManagersWriteService ManagersWriteService;
+<h1>Менеджери</h1>
+
+
+@if (_pageModel == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Електронна пошта</th>
+            <th>Ім'я</th>
+            <th>Час останнього входу</th>
+            <th>Дії</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var manager in _pageModel.PageList)
+        {
+            <tr>
+                <td>@manager.Id</td>
+                <td>@manager.Email</td>
+                <td>@manager.Name</td>
+                <td>@(manager.LastLoginTime.HasValue ? manager.LastLoginTime.ToString() : "N/A")</td>
+                <td>
+                    @if (manager.Blocked)
+                    {
+                        <button class="btn btn-sm btn-success" @onclick="(() => UnBlock(manager.Id))">Розблокувати</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm btn-danger" @onclick="(() => Block(manager.Id))">Заблокувати</button>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            
+            @if (_pageModel.Pagination.PageNumber > 1)
+            {
+            <li class="page-item">
+                <a class="page-link" @onclick="(() => RefreshTable(1))">&lt;&lt;</a>
+            </li>
+            }
+                                
+            @foreach (var prev in _pageModel.Pagination.GetNumbersAllPreviousPages())
+            {
+            <li class="page-item">
+                <a class="page-link" @onclick="(() => RefreshTable(prev))">@prev</a>
+            </li>
+            }
+                
+                                
+            @if (_pageModel.Pagination.PageNumber > 0)
+            {
+            <li class="page-item active">
+                <a class="page-link">@_pageModel.Pagination.PageNumber</a>
+            </li>   
+            }
+                
+                
+            @foreach (var next in _pageModel.Pagination.GetNumbersAllNextPages())
+            {
+            <li class="page-item">
+                <a class="page-link" @onclick="(() => RefreshTable(next))">@next</a>
+            </li>
+            }
+                                
+                
+            @if (_pageModel.Pagination.PageNumber < _pageModel.Pagination.TotalPages)
+            {
+            <li class="page-item">
+                <a class="page-link" @onclick="(() => RefreshTable(_pageModel.Pagination.TotalPages))">>></a>
+            </li>
+            }
+            
+        </ul>
+    </nav>
+}
+
+@code
+{
+    BaseListPageModel<ManagerReviewModel> _pageModel;
+    
+    private int _currentPage = 1;
+
+    protected override async void OnInitialized()
+    {
+        await RefreshTable(_currentPage);
+        await base.OnInitializedAsync();
+    }
+
+    private async Task Block(int managerId)
+    {
+        await ManagersWriteService.BlockManager(managerId);
+        await RefreshTable(_currentPage);
+    }
+    
+    private async Task UnBlock(int managerId)
+    {
+        await ManagersWriteService.UnBlockManager(managerId);
+        await RefreshTable(_currentPage);
+    }
+    
+    private async Task RefreshTable(int pageNumber)
+    {
+        _currentPage = pageNumber;
+        var managers = await ManagersProvider
+            .GetManagersList(pageNumber <= 0 ? 1 : pageNumber, 10);
+        _pageModel = new BaseListPageModel<ManagerReviewModel>(managers, 10);
+    }
+}
+
+

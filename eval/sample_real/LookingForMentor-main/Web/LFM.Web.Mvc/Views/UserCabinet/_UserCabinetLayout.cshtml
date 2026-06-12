@@ -1,0 +1,32 @@
+@using Lfm.Web.Mvc.App.UIRenderers
+@using Lfm.Domain.Common.Extensions
+@using LFM.DataAccess.DB.Core.Types
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Кабінет користувача";
+}
+
+<div>
+    <h4>Кабінет @(User.GetRole() == LfmIdentityRolesEnum.Student ? "учня" : "викладача")</h4>
+    <hr />
+    <div class="row">
+        <div class="col-md-3">
+            <ul class="nav nav-pills flex-column">
+                @foreach (var item in UserCabinetUiRenderer.GetCabinetNavigationItems(Context))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link @CommonUiRenderer.ActiveLink(Context, item.ControllerName, item.ActionName)"
+                           asp-controller="@(item.ControllerName)"
+                           asp-action="@(item.ActionName)">
+                            @item.Name
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+        
+        <div class="col-md-9">
+            @RenderBody()
+        </div>
+    </div>
+</div>

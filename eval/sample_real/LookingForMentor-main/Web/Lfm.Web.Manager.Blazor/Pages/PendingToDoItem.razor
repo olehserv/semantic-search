@@ -1,0 +1,108 @@
+@page "/pendingToDo/{toDoId:int}"
+@using Lfm.Domain.Manager.Services.DataProviders
+@using Lfm.Domain.Manager.Models.ReviewModels
+@using Lfm.Domain.Manager.Services.WriteServices
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Linq
+@using Lfm.Domain.Common.Extensions
+@using Lfm.Common.Blazor.App.Extensions
+@inject IToDoProvider Provider;
+@inject IManageToDoService ManageToDoService;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager UriHelper
+
+<h1>Детальна інформація запиту</h1>
+
+<div class="col-md-8">
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Код Операції</label>
+        <input disabled value="@_item.OperationCode">
+    </div>
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Опис Операції</label>
+        <input disabled value="@_item.OperationDescription">
+    </div>
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Створено Користувачем</label>
+        <input disabled value="@_item.CreatedByUser">
+    </div>
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Створено о</label>
+        <input disabled value="@_item.CreatedDateTime">
+    </div>
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Тіло запиту</label>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Поле</th>
+                    <th>Значення</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var field in _item.Command.Where(c => c.IsVisible))
+                {
+                    <tr>
+                        <td>@field.Name</td>
+                        <td>@field.Value</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @* <textarea disabled readonly cols="70" rows="20"> *@
+        @*     @JToken.Parse(_body.ToString()).ToString(Formatting.Indented) *@
+        @* </textarea> *@
+    </div>
+    
+    @if (!string.IsNullOrWhiteSpace(_imageSrc))
+    {
+        <div>
+            <label>Фото профілю</label>
+            <img src="@_imageSrc" style="width: 500px; height: auto;" alt=""/>
+        </div>
+    }
+
+    <button class="btn btn-lg border-info btn-outline-warning" @onclick="TakeToReview">Взяти на перевірку</button>
+
+</div>
+
+
+
+@code {
+    [Parameter]
+    public int ToDoId { get; set; }
+
+    ToDoDetailedReviewModel _item;
+
+    string _imageSrc;
+    
+    private async Task TakeToReview()
+    {
+        var userId = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.GetId();
+        var res = await ManageToDoService.StartReviewing(ToDoId, userId);
+        
+        if(!res.IsSuccess)
+            UriHelper.NavigateTo("/pendingToDos");
+
+        UriHelper.NavigateTo($"/reviewingToDo/{ToDoId}");
+    }
+
+    protected override async void OnInitialized()
+    {
+        _item = await Provider.GetDetailedPendingToDo(ToDoId);
+        
+        if(!_item.IsSuccess)
+            UriHelper.NavigateTo("/pendingToDos");
+        
+        if (_item.Command.Any(c => c.IsImage == true))
+            _imageSrc = $"data:image/jpeg;base64,{_item.Command.First(c => c.IsImage == true).Value}";
+
+        await base.OnInitializedAsync();
+    }
+}

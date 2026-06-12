@@ -4,4 +4,3 @@ cache
 *:Zone.Identifier
 .venv
 .claude/index
-eval/sample_real

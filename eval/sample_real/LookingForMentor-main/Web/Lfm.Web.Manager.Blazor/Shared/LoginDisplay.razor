@@ -1,0 +1,19 @@
+﻿@using Lfm.Domain.Common.Extensions
+<AuthorizeView>
+    <Authorized>
+        @if (!context.User.IsManager())
+        {
+            <LoginRedirect/>
+        }
+        
+        Привіт, @context.User.GetName()!
+        
+        <form method="post" action="Identity/Account/LogOut">
+            <button type="submit" class="nav-link btn btn-link">Вихід <span class="oi oi-account-logout" aria-hidden="true"></span></button>
+        </form>
+        
+    </Authorized>
+    <NotAuthorized>
+        <LoginRedirect/>
+    </NotAuthorized>
+</AuthorizeView>

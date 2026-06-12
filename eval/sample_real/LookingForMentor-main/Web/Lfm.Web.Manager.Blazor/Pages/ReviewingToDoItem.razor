@@ -1,0 +1,138 @@
+@page "/reviewingToDo/{toDoId:int}"
+@using Lfm.Domain.Manager.Services.DataProviders
+@using Lfm.Domain.Manager.Services.WriteServices
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Linq
+@using Lfm.Domain.Manager.Models.ReviewModels
+@using Lfm.Domain.Common.Extensions
+@using System.ComponentModel.DataAnnotations
+@inject IToDoProvider Provider;
+@inject IManageToDoService ManageToDoService;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager UriHelper
+
+
+<h1>Детальна інформація запиту</h1>
+
+<div class="col-md-8">
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Код Операції</label>
+        <input disabled value="@_item.OperationCode">
+    </div>
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Опис Операції</label>
+        <input disabled value="@_item.OperationDescription">
+    </div>
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Створено Користувачем</label>
+        <input disabled value="@_item.CreatedByUser">
+    </div>
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Створено о</label>
+        <input disabled value="@_item.CreatedDateTime">
+    </div>
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <label>Тіло запиту</label>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Поле</th>
+                <th>Значення</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var field in _item.Command.Where(c => c.IsVisible))
+            {
+                <tr>
+                    <td>@field.Name</td>
+                    <td>@field.Value</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        @* <textarea disabled readonly cols="70" rows="20"> *@
+        @*     @JToken.Parse(_body.ToString()).ToString(Formatting.Indented) *@
+        @* </textarea> *@
+    </div>
+    
+    @if (!string.IsNullOrWhiteSpace(_imageSrc))
+    {
+        <div>
+            <label>Фото профілю</label>
+            <img src="@_imageSrc" style="width: 500px; height: auto;" alt=""/>
+        </div>
+    }
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <a class="btn btn-lg btn-success" @onclick="Approve">Затвердити</a>
+    </div>
+    
+    <div class="list-group-item flex-column align-items-start border-dark">
+        <EditForm Model="@_rejectForm" OnValidSubmit="@Reject">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
+
+            <div class="form-group">
+                <label>Причина відмови</label>
+                <InputTextArea required @bind-Value="_rejectForm.Reason" cols="50" rows="6" />
+            </div>
+            
+            <div class="form-group">
+                <button class="btn btn-danger" type="submit">Відхилити</button>
+            </div>
+            
+        </EditForm>
+    </div>
+
+</div>
+
+
+
+@code {
+    [Parameter]
+    public int ToDoId { get; set; }
+
+    ToDoDetailedReviewModel _item;
+
+    string _imageSrc;
+    
+    int _userId;
+
+    RejectForm _rejectForm = new();
+    class RejectForm
+    {
+        [Required]
+        [MinLength(10)]
+        public string Reason { get; set; }
+    }
+    
+    private async Task Approve()
+    {
+        await ManageToDoService.ApproveTodo(ToDoId, _userId);
+        UriHelper.NavigateTo("/reviewingToDos");
+    }
+    
+    private async Task Reject()
+    {
+        await ManageToDoService.RejectToDo(ToDoId, _userId, _rejectForm.Reason);
+        UriHelper.NavigateTo("/reviewingToDos");
+    }
+
+    protected override async void OnInitialized()
+    {
+        _userId = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.GetId();
+
+        _item = await Provider.GetDetailedReviewingToDo(ToDoId, _userId);
+        
+        if(!_item.IsSuccess)
+            UriHelper.NavigateTo("/reviewingToDos");
+        
+        if (_item.Command.Any(c => c.IsImage == true))
+            _imageSrc = $"data:image/jpeg;base64,{_item.Command.First(c => c.IsImage == true).Value}";
+        
+        await base.OnInitializedAsync();
+    }
+}

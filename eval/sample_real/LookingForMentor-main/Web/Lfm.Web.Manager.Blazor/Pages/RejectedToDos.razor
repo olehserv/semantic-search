@@ -1,0 +1,68 @@
+﻿@page "/rejectedToDos"
+@using Lfm.Domain.Manager.Services.DataProviders
+@using Lfm.Manager.Blazor.App.Models
+@using Lfm.Domain.Manager.Models.ReviewModels
+@using Lfm.Domain.Manager.Models.SearchModel
+@using Lfm.Core.Common.Web.Models
+@using Lfm.Web.Manager.Blazor.Components;
+@inject NavigationManager NavManager
+@inject IToDoProvider Provider;
+
+<h1>Відхилені запити на підтвердження</h1>
+
+@if (PM == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Код операції</th>
+            <th>Створено корситувачем</th>
+            <th>Час створення</th>
+            <th>Час відміни</th>
+            <th>Відмінено менеджером</th>
+            <th>Причина відміни</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var manager in PM.PageList)
+        {
+            <tr>
+                <td>@manager.Id</td>
+                <td>@manager.OperationCode</td>
+                <td>@manager.CreatedByUser</td>
+                <td>@manager.CreatedDateTime</td>
+                <td>@manager.RejectedDateTime</td>
+                <td>@manager.RejectedByAdmin</td>
+                <td>@manager.RejectedReason</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    
+    <Pagination Model="@PM.Pagination" GoToPageFunc="@RefreshTable"/>
+}
+
+@code
+{
+    BaseListPageModel<RejectedToDoReviewModel> PM;
+
+    protected override async void OnInitialized()
+    {
+        await RefreshTable();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task RefreshTable(int pageNumber = 1)
+    {
+        var toDos = await Provider.GetRejectedToDos(pageNumber <= 0 ? 1 : pageNumber, 2);
+        PM = new BaseListPageModel<RejectedToDoReviewModel>(toDos, 2);
+        StateHasChanged();
+    }
+}
