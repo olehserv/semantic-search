@@ -24,7 +24,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 |------|-------|
 | Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). Still destructive (deletes the collection first), no incremental mode. |
 | Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Still open for Phase 2: min-max fusion over mixed scales, and candidates cut before ranking. |
-| Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host: first query 0.65 s, second 0.10 s (was ~30 s per query). `GET /health`, `POST /search`, JSON errors (400/500). Docker files written but container not yet verified (no compose plugin on this machine). |
+| Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host (first query 0.65 s, second 0.10 s — was ~30 s) **and in Docker** (2026-06-13): compose stack up, same top result + score as host, BM25 nodes loaded from Qdrant inside the container, warm queries 0.25 s, restart loads the model from the `hf_models` volume (no re-download), engine built once per process. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
 | Agent integration (`scripts/mcp_server.py`, `.mcp.json`) | **Real MCP server (Phase 1).** Official `mcp` SDK, FastMCP, stdio; one tool `search_codebase` that forwards to the service over HTTP with a timeout. Verified end-to-end with an MCP stdio client: initialize → tools/list → tools/call returns ranked results; service down → structured `{"error", "hint"}`. Legacy `mcp.json` deleted. |
 | Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 34 passing unit tests (heavy tests skip without the ML stack), end-to-end demo. Demo checked 2026-06-11: 1.000 on all metrics for the 8 toy questions. |
@@ -63,18 +63,15 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 - Importing `query_index` or `model_setup` does heavy work (model load,
   cache reads) — tests replace `model_setup` with a fake in
   `tests/conftest.py`.
-- This machine has no `docker compose` / `docker-compose`. Start Qdrant by
-  hand: `docker run -d --name qdrant-local -p 6333:6333 -v
-  qdrant_storage:/qdrant/storage qdrant/qdrant`.
+- The whole stack now runs compose-managed (project `ai-agent`):
+  `docker compose -f scripts/docker-compose.yml -p ai-agent up -d`.
+  Both containers use `restart: unless-stopped` and are left running.
 
 ## Next actions (in order)
 
-1. **Review + merge PR #2** (Phase 1):
+1. **Review + merge PR #2** (Phase 1, now incl. container verification):
    https://github.com/olehserv/semantic-search/pull/2
-2. **Verify the container** on a machine with the docker compose plugin:
-   `cd scripts && docker compose up -d --build search-service`, then the
-   checklist in the old work order (Task 9).
-3. **Phase 2** (eval-gated): record baselines, then RRF fusion (2.1), cut
+2. **Phase 2** (eval-gated): record baselines, then RRF fusion (2.1), cut
    after scoring (2.2), configurable query variants (2.3), code-aware
    chunking (2.4), golden set → 30–50 questions (2.5).
 
@@ -88,6 +85,14 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-13 (container verification)** — Compose plugin installed (v5.1.1)
+  by Oleh; Phase 1's deferred step finished. Dockerfile fixed to install CPU
+  torch (the PyPI default is the multi-GB CUDA build); obsolete `version:`
+  removed from compose. Manually-run Qdrant replaced by the compose-managed
+  stack; sample index rebuilt. Verified in the container: same search results
+  as host, BM25 from Qdrant, warm 0.25 s queries, MCP e2e passes, restart
+  uses the model volume (no re-download), engine built once per process.
+  Stack left running (project `ai-agent`).
 - **2026-06-12 (Phase 1)** — Real MCP server (FastMCP/stdio) + long-running
   Flask search service built on branch `phase-1-search-service`. BM25 now
   rebuilt in memory from Qdrant; `bm25.pkl` and the legacy `mcp.json` are

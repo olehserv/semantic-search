@@ -3,8 +3,8 @@
 **Date:** 2026-06-01
 **Status:** ✅ Implemented 2026-06-12 (branch `phase-1-search-service`), with
 one change: `mcp_server.py` became a real MCP server (official `mcp` SDK,
-FastMCP/stdio) instead of keeping the line protocol. Container verification
-deferred (dev machine has no compose plugin).
+FastMCP/stdio) instead of keeping the line protocol. Container stack verified
+with docker compose on 2026-06-13 (full runtime checklist below passed).
 
 ## Context
 
