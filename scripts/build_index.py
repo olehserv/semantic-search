@@ -1,5 +1,6 @@
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.schema import TextNode
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from datetime import datetime
 
@@ -7,6 +8,7 @@ from datetime import datetime
 # VectorStoreIndex uses to embed nodes during the build.
 import model_setup  # noqa: F401
 import qdrant
+from chunking import chunk_csharp
 
 PROJECT_PATH = "./"
 
@@ -32,6 +34,35 @@ def load_documents():
         ]
     ).load_data()
 
+def make_nodes(docs):
+    """Code-aware chunks for C# files (task 2.4); sentence windows for
+    everything else and for C# that does not parse."""
+    splitter = SentenceSplitter(chunk_size=800, chunk_overlap=150)
+    nodes = []
+    fallback_docs = []
+    for doc in docs:
+        chunks = None
+        if (doc.metadata.get("file_name") or "").endswith(".cs"):
+            chunks = chunk_csharp(doc.text)
+        if chunks is None:
+            fallback_docs.append(doc)
+            continue
+        for text, extra in chunks:
+            nodes.append(TextNode(
+                text=text,
+                metadata={**doc.metadata, **extra},
+                # Keep the reader's embed/LLM exclusions (file size, dates…)
+                # exactly as the SentenceSplitter nodes inherited them.
+                excluded_embed_metadata_keys=list(doc.excluded_embed_metadata_keys),
+                excluded_llm_metadata_keys=list(doc.excluded_llm_metadata_keys),
+            ))
+    code_aware = len(nodes)
+    nodes.extend(splitter.get_nodes_from_documents(fallback_docs))
+    print(f"[DEBUG] code-aware chunks: {code_aware}, "
+          f"fallback docs: {len(fallback_docs)}")
+    return nodes
+
+
 def build_index(force=False):
     qdrant.ensure_qdrant()
     client = qdrant.get_qdrant_client()
@@ -53,12 +84,7 @@ def build_index(force=False):
     docs = load_documents()
     print(f"[DEBUG] [{datetime.now()}] Loaded {len(docs)} documents")
 
-    parser = SentenceSplitter(
-        chunk_size=800,
-        chunk_overlap=150
-    )
-
-    nodes = parser.get_nodes_from_documents(docs)
+    nodes = make_nodes(docs)
 
     print(f"[DEBUG] [{datetime.now()}] Total nodes: {len(nodes)}")
     
