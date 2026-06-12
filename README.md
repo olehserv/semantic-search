@@ -107,7 +107,8 @@ shim needs nothing else — no torch, no llama-index).
 | Qdrant host / port / collection name | `qdrant.py` |
 | Which file types are indexed | `build_index.py` (`load_documents`) |
 | Chunk size / overlap | `build_index.py` (`SentenceSplitter`) |
-| Search depth, score weights, query variants | `query_index.py` / `ranking.py` |
+| Search depth, score weights | `query_index.py` / `ranking.py` |
+| Query variants | `QUERY_VARIANT_SUFFIXES` env var (comma-separated, default `implementation`). Add domain terms for your codebase, e.g. `implementation,.NET core backend` |
 
 ## Good to know
 

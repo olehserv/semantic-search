@@ -70,12 +70,13 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge the RRF fusion PR** (branch `phase-2-rrf-fusion`):
-   eval gate passed, numbers in the status log.
+1. **Review + merge the query-variants PR** (branch
+   `phase-2-query-variants`): config extraction, behavior-preserving when
+   configured; numbers in the status log.
 2. **Phase 2 tuning, next tasks** (eval-gated, one change per PR):
-   check whether the post-re-rank cut still hurts (2.2 remainder),
-   configurable query variants (2.3), code-aware
-   chunking (2.4). Each change must beat the recorded numbers in
+   code-aware chunking (2.4, expected biggest win), then check whether the
+   post-re-rank cut still hurts (2.2 remainder), optional re-ranker (2.6).
+   Each change must beat the recorded numbers in
    `eval/baselines/`.
 
 ## How to verify the project right now
@@ -88,6 +89,16 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-13 (task 2.3 — configurable query variants)** — The hard-coded
+  `".NET core backend"` suffix is gone from `expand_query()` (H7 part);
+  variants now come from the `QUERY_VARIANT_SUFFIXES` env var (default
+  `implementation`). Eval: with
+  `QUERY_VARIANT_SUFFIXES="implementation,.NET core backend"` the numbers
+  reproduce task 2.1 exactly (0.787 / 0.526 / 0.585 —
+  `2026-06-13-real-variants.json`); the generic default scores 0.738 /
+  0.498 / 0.555 on this .NET corpus, so the suffix is a real domain hint —
+  documented in `eval/README.md` that baseline comparisons must set it.
+  Sample corpus stays 1.000 either way. 49 tests green.
 - **2026-06-13 (task 2.1 — RRF fusion)** — Min-max score mixing replaced by
   Reciprocal Rank Fusion (finding H1): `rrf_scores()` in `ranking.py` fuses
   the 9 ranked lists (3 retrievers × 3 query variants, original query

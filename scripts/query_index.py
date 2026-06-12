@@ -27,6 +27,15 @@ from ranking import expand_query, rrf_scores, score_candidates  # noqa: E402
 
 EMB_CACHE_PATH = "./.claude/cache/embeddings.pkl"
 
+# Comma-separated suffixes for extra query variants. Put domain terms for
+# your codebase here (e.g. "implementation,.NET core backend") instead of
+# hard-coding them in the pipeline.
+QUERY_VARIANT_SUFFIXES = tuple(
+    s.strip()
+    for s in os.getenv("QUERY_VARIANT_SUFFIXES", "implementation").split(",")
+    if s.strip()
+)
+
 _embedding_cache = {}
 
 print(f"[DEBUG] [{datetime.now()}] BEGIN query_index")
@@ -182,7 +191,7 @@ def query(q, alpha=0.7, top_k=8):
 
     vector, bm25, vector_wide = get_engine()
 
-    queries = expand_query(q)
+    queries = expand_query(q, QUERY_VARIANT_SUFFIXES)
 
     # One ranked id-list per (variant, retriever) pair; the original query's
     # lists weigh more, like the old frequency boost did.

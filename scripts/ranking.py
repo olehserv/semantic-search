@@ -11,17 +11,15 @@ import numpy as np
 RRF_K = 60
 
 
-def expand_query(q):
+def expand_query(q, suffixes=("implementation",)):
     """Variants of the user query that are retrieved and fused together.
 
-    NOTE: the ".NET core backend" suffix is a domain assumption; making this
-    configurable is plan item 2.3.
+    suffixes : phrases appended to the query, one extra variant each.
+    The original query always comes first (the fusion weighs it higher).
+    Domain terms (e.g. ".NET backend") belong in the caller's configuration,
+    not here.
     """
-    return [
-        q,
-        f"{q} implementation",
-        f"{q} .NET core backend",
-    ]
+    return [q] + [f"{q} {s}" for s in suffixes]
 
 
 def cosine(a, b):
