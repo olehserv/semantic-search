@@ -57,12 +57,29 @@ downloads CPU torch and the embedding model, so it is too heavy for every push
 |---------|---------|--------|
 | `QUERY_VARIANT_SUFFIXES` | `implementation` | Extra query variants; set domain hints here (see below). |
 | `RERANK_CANDIDATES` | `30` | How many top fused candidates go to the embedding re-rank. Query-time only — no reindex needed to change it. |
+| `CROSS_ENCODER_MODEL` | _(empty = off)_ | Set to a cross-encoder name to re-rank with it instead of the cosine blend. Recommended: `cross-encoder/ms-marco-MiniLM-L-6-v2`. |
 
 `RERANK_CANDIDATES` was added to measure task 2.2 (does the post-fusion cut hurt
 recall?). On the real project the answer is **no**: the candidate pool per query
 is only ~16–23, always under 30, so every value from 30 up to "no cut" gives the
 same numbers (Recall@5 0.912 / MRR 0.716 / nDCG@5 0.760). The knob stays for
 future tuning if the retrievers are ever widened.
+
+`CROSS_ENCODER_MODEL` (task 2.6) turns on an optional cross-encoder re-ranker,
+blended with the RRF score. It is **off by default** because it trades latency
+for a modest quality gain. Measured on the real project:
+
+| Re-ranker | Recall@5 | MRR | nDCG@5 | CPU latency / query |
+|-----------|---------:|----:|-------:|--------------------:|
+| cosine + RRF (default) | 0.912 | 0.716 | 0.760 | ~0.16 s |
+| `ms-marco-MiniLM-L-6-v2` + RRF | 0.925 | **0.751** | **0.782** | ~1.0 s |
+| `BAAI/bge-reranker-base` + RRF | **0.938** | 0.747 | 0.786 | ~5.9 s |
+
+MiniLM-L6 is the sweet spot (best MRR, ~90 MB, ~1 s on CPU). The cross-encoder is
+**blended, not used alone** — pure cross-encoder ordering scored *worse* than the
+default (0.875 / 0.686 / 0.721), because it drops the BM25/keyword signal that
+code search relies on. The MiniLM-on report is saved as
+`baselines/2026-06-13-real-cross-encoder.json`.
 
 ## The real-project baseline
 

@@ -50,7 +50,7 @@ one real .NET project. Change one thing per eval run.
 | 2.3 | Make the query variants configurable; remove the fixed `".NET core backend"` suffix. | H7 (part) | S |
 | 2.4 | Code-aware chunking for C# (tree-sitter or Roslyn: cut on type/method borders, keep signatures with bodies, add namespace/class metadata). Expected to be the biggest single quality win. | M8 | L |
 | 2.5 | Grow `eval/golden.jsonl` to 30–50 questions on a real codebase (the eval README explains how). Add the eval as a manual CI job with a saved baseline report. | H5 (quality) | M |
-| 2.6 | Optional, after measuring 2.1–2.4: a cross-encoder re-ranker (e.g. `BAAI/bge-reranker-base`) instead of the hand-made cosine re-rank. | — | M |
+| 2.6 | Optional, after measuring 2.1–2.4: a cross-encoder re-ranker (e.g. `BAAI/bge-reranker-base`) instead of the hand-made cosine re-rank. **Done (2026-06-13):** added `CROSS_ENCODER_MODEL` (off by default); MiniLM-L6 + RRF blend beats the cosine re-rank (MRR 0.716 → 0.751) but costs ~1 s/query on CPU, so it ships opt-in. Pure cross-encoder (no RRF) was worse. | — | M |
 
 **Done when:** Recall@5 and nDCG@5 are clearly above the recorded baseline;
 every merged change has a before/after eval report.

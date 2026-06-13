@@ -23,7 +23,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 | Area | State |
 |------|-------|
 | Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). C# files get code-aware chunks from `scripts/chunking.py` (task 2.4, tree-sitter); other files keep the `SentenceSplitter`. Still destructive (deletes the collection first), no incremental mode. |
-| Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Fusion is RRF over ranks since task 2.1 (H1 fixed; candidates cut after fusion, so most of H2 too). |
+| Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Fusion is RRF over ranks since task 2.1 (H1 fixed; candidates cut after fusion, H2 fully closed — 2.2 found the cut never bites). Optional cross-encoder re-ranker (task 2.6) behind `CROSS_ENCODER_MODEL`, **off by default**. |
 | Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host (first query 0.65 s, second 0.10 s — was ~30 s) **and in Docker** (2026-06-13): compose stack up, same top result + score as host, BM25 nodes loaded from Qdrant inside the container, warm queries 0.25 s, restart loads the model from the `hf_models` volume (no re-download), engine built once per process. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
 | Agent integration (`scripts/mcp_server.py`, `.mcp.json`) | **Real MCP server (Phase 1).** Official `mcp` SDK, FastMCP, stdio; one tool `search_codebase` that forwards to the service over HTTP with a timeout. Verified end-to-end with an MCP stdio client: initialize → tools/list → tools/call returns ranked results; service down → structured `{"error", "hint"}`. Legacy `mcp.json` deleted. |
@@ -71,15 +71,13 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge the 2.2/2.5 PR** (branch `phase-2-rerank-cut-and-eval-ci`):
-   `RERANK_CANDIDATES` knob + finding that the cut is harmless, and the manual
-   eval CI workflow. No metric change (gate trivially passes).
-2. **Close Phase 2 and start Phase 3 (operations hardening).** Phase 2's
-   "done when" is met (Recall@5 0.600 → 0.912, nDCG@5 0.343 → 0.760, a report
-   per change). The only Phase 2 item left is the **optional** 2.6 cross-encoder
-   re-ranker — skip unless Phase 3 leaves time. Phase 3 work: safe/incremental
-   indexing (no destructive rebuild), env-only deploy, the full-stack
-   integration job hinted at in `ci.yml`.
+1. **Review + merge the 2.6 PR** (branch `spike/cross-encoder-rerank`): optional
+   cross-encoder re-ranker, off by default; `blend_cross_encoder()` + tests, new
+   baseline, docs. Default behavior unchanged (gate: 0.912/0.716/0.760 reproduced).
+2. **Start Phase 3 (operations hardening).** Phase 2 is complete (all of 2.1–2.6
+   done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 → 0.760, a report
+   per change). Phase 3 work: safe/incremental indexing (no destructive rebuild),
+   env-only deploy, the full-stack integration job hinted at in `ci.yml`.
 
 ## How to verify the project right now
 
@@ -91,6 +89,19 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-13 (task 2.6 — optional cross-encoder re-ranker)** — Investigated and
+  productionized **off by default**. `CROSS_ENCODER_MODEL` env var (empty = off):
+  when set, the candidate pool is re-scored by a cross-encoder blended with RRF
+  (`blend_cross_encoder()` in `ranking.py`, weight 0.85, unit-tested). Findings on
+  the real `lfm` eval: `ms-marco-MiniLM-L-6-v2` + RRF beats the cosine default
+  (Recall@5 0.912 → 0.925, MRR 0.716 → **0.751**, nDCG@5 0.760 → **0.782**) for
+  ~1 s/query on CPU (vs ~0.16 s); `bge-reranker-base` is marginally better
+  (0.938/0.747/0.786) but ~5.9 s/query — not worth it. **Pure cross-encoder
+  (no RRF) is worse** (0.875/0.686/0.721): it drops the BM25/keyword signal, so it
+  is always blended. Left off by default because the gain is modest and the CPU
+  latency cost is real; the warm 0.16 s default is preserved. New baseline
+  `eval/baselines/2026-06-13-real-cross-encoder.json`; `sentence-transformers`
+  pinned in `requirements.txt`. 59 tests green, ruff clean. **Phase 2 complete.**
 - **2026-06-13 (task 2.2 check + task 2.5 — eval CI)** — Two Phase 2 leftovers
   closed. **2.2:** the post-fusion candidate cut (`[:30]` in `query_index.py`) is
   now `RERANK_CANDIDATES` (env var, default 30). Swept 30/50/100/9999 on the real
