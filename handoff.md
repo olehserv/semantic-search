@@ -59,12 +59,15 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
   building, overriding any value in the caller's environment, so the demo can
   only ever (re)build its own throwaway collection — never a real index such as
   `lfm`.
-- If you change the embedding model without deleting
-  `./.claude/cache/embeddings.pkl`, old and new vectors get mixed silently
-  (finding H3).
-- Importing `query_index` or `model_setup` does heavy work (model load,
-  cache reads) — tests replace `model_setup` with a fake in
-  `tests/conftest.py`.
+- ~~Changing the embedding model silently mixes old and new vectors~~
+  **Closed (task 3.2, H3).** The cache is now SQLite keyed by
+  `(model_name, text_hash)` (`scripts/embedding_cache.py`), so a different
+  model simply misses and recomputes — vectors from two models can never be
+  confused. The cache also has an LRU size limit and writes once per query.
+- Importing `query_index` or `model_setup` does heavy work (model load) —
+  tests replace `model_setup` with a fake in `tests/conftest.py`. The
+  embedding cache no longer opens its database at import (it is built lazily
+  on first query).
 - The whole stack now runs compose-managed (project `ai-agent`):
   `docker compose -f scripts/docker-compose.yml -p ai-agent up -d`.
   Both containers use `restart: unless-stopped` and are left running.

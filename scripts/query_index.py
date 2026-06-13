@@ -20,10 +20,8 @@ from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.core import VectorStoreIndex
 
-import os
 import sys
 import json
-import pickle
 import functools
 from datetime import datetime
 from time import time
@@ -38,11 +36,10 @@ print = functools.partial(print, file=sys.stderr, flush=True)
 import model_setup  # noqa: E402, F401
 import qdrant  # noqa: E402
 from config import settings  # noqa: E402
+from embedding_cache import EmbeddingCache  # noqa: E402
 from ranking import (  # noqa: E402
     expand_query, rrf_scores, score_candidates, blend_cross_encoder,
 )
-
-EMB_CACHE_PATH = settings.emb_cache_path
 
 # Comma-separated suffixes for extra query variants (env QUERY_VARIANT_SUFFIXES).
 # Put domain terms for your codebase here (e.g. "implementation,.NET core
@@ -78,28 +75,29 @@ def _get_cross_encoder():
         _cross_encoder = CrossEncoder(CROSS_ENCODER_MODEL)
     return _cross_encoder
 
-_embedding_cache = {}
-
 print(f"[DEBUG] [{datetime.now()}] BEGIN query_index")
 
-def cache_warmup():
-    """Load the saved embedding cache from disk into memory, if it exists.
+# The embedding cache is built lazily on first use (see _get_cache), not at
+# import time, so just importing this module never opens a database file. That
+# keeps imports cheap and tests side-effect free.
+_emb_cache = None
 
-    The cache maps chunk text -> its vector, so we do not recompute embeddings
-    we have seen before (embedding is the slow part). Missing file = empty cache.
+
+def _get_cache():
+    """Return the shared EmbeddingCache, creating it on first call.
+
+    The cache is keyed by the model NAME string (settings.embed_model), so it
+    can never serve vectors from a different model than the one in use.
     """
-    global _embedding_cache
-    if os.path.exists(EMB_CACHE_PATH):
-        with open(EMB_CACHE_PATH, "rb") as f:
-            print("[DEBUG] Loading EMB cache ...")
-            # pickle is acceptable here: the file is local, written only by
-            # this code. Replacing it (model-keyed, no pickle) is plan
-            # item 3.2 — the approved Phase 1 design keeps it as-is.
-            _embedding_cache = pickle.load(f)
-            print(f"[DEBUG] EMB cache size: {len(_embedding_cache)}")
+    global _emb_cache
+    if _emb_cache is None:
+        _emb_cache = EmbeddingCache(
+            settings.emb_cache_path,
+            settings.embed_model,        # config string name -> part of the key
+            settings.emb_cache_max_size,
+        )
+    return _emb_cache
 
-
-cache_warmup()
 
 def load_all_nodes(client, collection_name):
     """Rebuild all nodes from the Qdrant collection (keeps the node IDs, so
@@ -239,25 +237,6 @@ def get_engine():
     return _engine
 
 
-def get_embedding(text, embed_model):
-    """Return the vector for `text`, using the cache and saving new ones to disk.
-
-    Cache hit -> instant. Cache miss -> compute the vector, then persist the whole
-    cache so the next run starts warm.
-    """
-    if text not in _embedding_cache:
-        _embedding_cache[text] = embed_model.get_text_embedding(text)
-
-        # Write to a temp file then atomically replace, so a crash mid-dump
-        # can't corrupt the existing cache.
-        os.makedirs(os.path.dirname(EMB_CACHE_PATH), exist_ok=True)
-        tmp_path = f"{EMB_CACHE_PATH}.tmp"
-        with open(tmp_path, "wb") as f:
-            pickle.dump(_embedding_cache, f)
-        os.replace(tmp_path, EMB_CACHE_PATH)
-
-    return _embedding_cache[text]
-
 def query(q, alpha=0.7, top_k=8):
     """Search the codebase for `q` and return the top_k chunks as a dict.
 
@@ -319,13 +298,18 @@ def query(q, alpha=0.7, top_k=8):
         )
     else:
         # Default: bi-encoder cosine blended with the RRF score.
+        # Note: Settings.embed_model (capital S) is the llama-index model
+        # INSTANCE that computes vectors; settings.embed_model (lowercase) is
+        # the model NAME string the cache keys on.
         embed_model = Settings.embed_model
         query_emb = embed_model.get_text_embedding(q)
         texts = [n.text for n in ordered_nodes]
         try:
-            embeddings = [get_embedding(t, embed_model) for t in texts]
+            # One batched cache call: hits read from disk, misses are computed
+            # and stored, all in a single transaction (one disk write).
+            embeddings = _get_cache().get_many(texts, embed_model)
         except Exception as e:
-            print(f"[DEBUG] get_embedding failed ({e}); recomputing without cache")
+            print(f"[DEBUG] cache failed ({e}); recomputing without cache")
             embeddings = [embed_model.get_text_embedding(t) for t in texts]
         text_embeddings = {
             n.node_id: emb for n, emb in zip(ordered_nodes, embeddings)

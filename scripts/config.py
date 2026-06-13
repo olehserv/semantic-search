@@ -37,7 +37,13 @@ class Settings(BaseSettings):
     llm_model: str = "llama3"
 
     # --- Cache paths ---
-    emb_cache_path: str = "./.claude/cache/embeddings.pkl"
+    # SQLite file for the embedding cache (plan 3.2). Keyed by
+    # (model_name, text_hash), so switching models can never mix vectors.
+    emb_cache_path: str = "./.claude/cache/embeddings.db"
+    # Max rows kept in the embedding cache. When the table grows past this,
+    # the least-recently-used rows are evicted (LRU). Stops the cache from
+    # growing without bound and ages out vectors from old models.
+    emb_cache_max_size: int = 50000
 
     # --- Query-time knobs (already env-driven before this task) ---
     rerank_candidates: int = 30
