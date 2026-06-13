@@ -122,3 +122,34 @@ def test_candidate_cut_respected(fake_pipeline, monkeypatch):
     monkeypatch.setattr(query_index, "RERANK_CANDIDATES", 1)
     out = query_index.query("login")
     assert len(out["context"]) == 1
+
+
+# --- _retrieve_cache (LRU, finding M7) ---
+
+def test_retrieve_cache_hit_skips_retrieval(monkeypatch):
+    monkeypatch.setattr(query_index, "_retrieve_cache", {}, raising=False)
+    calls = {"n": 0}
+
+    class Counting:
+        def retrieve(self, q):
+            calls["n"] += 1
+            return []
+
+    c = Counting()
+    query_index.hybrid_retrieve("q", c, c, c)
+    query_index.hybrid_retrieve("q", c, c, c)   # served from cache
+    assert calls["n"] == 3   # three retrievers, called once; second call cached
+
+
+def test_retrieve_cache_evicts_least_recently_used(monkeypatch):
+    monkeypatch.setattr(query_index, "RETRIEVE_CACHE_SIZE", 2)
+    monkeypatch.setattr(query_index, "_retrieve_cache", {}, raising=False)
+    r = FakeRetriever([nws("n1", "t", "F.cs", 1.0)])
+
+    query_index.hybrid_retrieve("q1", r, r, r)
+    query_index.hybrid_retrieve("q2", r, r, r)
+    query_index.hybrid_retrieve("q1", r, r, r)   # touch q1 -> most recent
+    query_index.hybrid_retrieve("q3", r, r, r)   # over cap -> evict LRU (q2)
+
+    assert set(query_index._retrieve_cache) == {"q1", "q3"}
+    assert len(query_index._retrieve_cache) == 2

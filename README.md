@@ -133,6 +133,7 @@ read from environment variables — one typed place instead of scattered
 | LLM model (ask.py) | `LLM_MODEL` | `llama3` |
 | Embedding cache path | `EMB_CACHE_PATH` | `./.claude/cache/embeddings.db` |
 | Re-rank candidate cut | `RERANK_CANDIDATES` | `30` |
+| Retriever-results cache size | `RETRIEVE_CACHE_SIZE` | `256` (LRU cap on the warm service's per-query cache) |
 | Cross-encoder re-ranker | `CROSS_ENCODER_MODEL` | `""` (off) |
 | Service port | `PORT` | `8000` |
 | Max `/search` body size | `MAX_CONTENT_LENGTH` | `65536` (bytes; bigger requests get HTTP 413) |

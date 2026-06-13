@@ -33,6 +33,7 @@ CONFIG_ENV_VARS = (
     "QDRANT_HTTPS",
     "MAX_CONTENT_LENGTH",
     "MAX_CONTEXT_TOKENS",
+    "RETRIEVE_CACHE_SIZE",
 )
 
 
@@ -54,6 +55,7 @@ def test_defaults(clean_env):
     assert s.emb_cache_path == "./.claude/cache/embeddings.db"
     assert s.emb_cache_max_size == 50000
     assert s.rerank_candidates == 30
+    assert s.retrieve_cache_size == 256
     assert s.cross_encoder_model == ""
     assert s.service_port == 8000
     assert s.query_variant_suffixes == ("implementation",)
@@ -70,6 +72,7 @@ def test_env_overrides(clean_env):
     clean_env.setenv("PORT", "9000")
     clean_env.setenv("QDRANT_AUTOSTART", "0")
     clean_env.setenv("RERANK_CANDIDATES", "50")
+    clean_env.setenv("RETRIEVE_CACHE_SIZE", "64")
     clean_env.setenv("LOG_LEVEL", "DEBUG")
     clean_env.setenv("QDRANT_API_KEY", "secret")
     clean_env.setenv("QDRANT_HTTPS", "1")
@@ -82,6 +85,7 @@ def test_env_overrides(clean_env):
     assert s.service_port == 9000
     assert s.qdrant_autostart is False
     assert s.rerank_candidates == 50
+    assert s.retrieve_cache_size == 64
     assert s.log_level == "DEBUG"
     assert s.qdrant_api_key == "secret"
     assert s.qdrant_https is True

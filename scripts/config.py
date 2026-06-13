@@ -47,6 +47,10 @@ class Settings(BaseSettings):
 
     # --- Query-time knobs (already env-driven before this task) ---
     rerank_candidates: int = 30
+    # Max distinct queries kept in the in-memory retriever-results cache
+    # (query_index._retrieve_cache). The warm service is long-lived, so this is
+    # LRU-capped to stop the cache growing without bound (review finding M7).
+    retrieve_cache_size: int = Field(256, validation_alias="RETRIEVE_CACHE_SIZE")
     cross_encoder_model: str = ""
     # Raw comma-separated string; split via the property below. Kept as a plain
     # str (not list/tuple) because pydantic parses complex env fields as JSON,

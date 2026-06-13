@@ -46,6 +46,10 @@ QUERY_VARIANT_SUFFIXES = settings.query_variant_suffixes
 # effect on recall can be measured by the eval (production-readiness plan 2.2).
 RERANK_CANDIDATES = settings.rerank_candidates
 
+# LRU cap for the per-query retriever-results cache (_retrieve_cache, below). The
+# warm service is long-lived, so the cache must not grow without bound (M7).
+RETRIEVE_CACHE_SIZE = settings.retrieve_cache_size
+
 # Optional cross-encoder re-ranker (production-readiness plan 2.6). Off by
 # default (empty). When set to a model name, the candidate pool is re-scored by a
 # cross-encoder that reads each (query, chunk) pair jointly, blended with the RRF
@@ -206,13 +210,19 @@ def build_query_engine():
 
     return vector_retriever, bm25_retriever, vector_wide
 
+# Insertion-ordered dict used as a small LRU (plain dict keeps insertion order in
+# Python 3.7+): on a hit we pop+reinsert to mark "most recent"; on overflow we
+# drop the first (least-recently-used) key. Bounds memory in the warm service (M7).
 _retrieve_cache = {}
 
 def hybrid_retrieve(query, vector, bm25, vector_wide):
     """Run the three retrievers; return one ranked result list per retriever
-    (RRF fuses by rank, so the lists must stay separate)."""
+    (RRF fuses by rank, so the lists must stay separate). Results are cached per
+    query, LRU-capped at RETRIEVE_CACHE_SIZE."""
     if query in _retrieve_cache:
-        return _retrieve_cache[query]
+        results = _retrieve_cache.pop(query)
+        _retrieve_cache[query] = results   # reinsert -> now most-recently-used
+        return results
 
     logger.debug("hybrid_retrieve start for query '%s'", query)
     logger.debug("vector.retrieve")
@@ -224,6 +234,9 @@ def hybrid_retrieve(query, vector, bm25, vector_wide):
     logger.debug("hybrid_retrieve end for query '%s'", query)
 
     _retrieve_cache[query] = results
+    # Evict the least-recently-used entry once we exceed the cap.
+    if len(_retrieve_cache) > RETRIEVE_CACHE_SIZE:
+        del _retrieve_cache[next(iter(_retrieve_cache))]
     return results
 
 

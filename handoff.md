@@ -38,8 +38,8 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 - `docs/reviews/2026-06-11-production-readiness-plan.md` — the work plan in
   4 phases, with "done when" criteria.
 - `docs/reviews/2026-06-13-closeout.md` — **closeout**: every finding mapped to
-  the task that closed it + verification evidence. 18/19 fully closed; M7 (the
-  unbounded `_retrieve_cache`) is the one partial residual.
+  the task that closed it + verification evidence. **19/19 closed** (M7's
+  unbounded `_retrieve_cache` was found and LRU-capped in the closeout pass).
 
 ## Decisions already made (do not reopen)
 
@@ -108,15 +108,16 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
-- **2026-06-13 (review closeout)** — Cross-checked all 19 architecture-review
-  findings against the tasks that closed them; wrote
-  `docs/reviews/2026-06-13-closeout.md`. **18/19 fully closed.** The one
-  residual is **M7**: the warm service fixed the "useless per-query" half of the
-  retrieve cache, but `query_index._retrieve_cache` is still an **unbounded**
-  dict (a small, slow leak for a single-instance tool). Suggested optional
-  follow-up: LRU-cap it or drop it. Verification re-run on `main`: 112 tests
-  green, ruff clean, demo eval 1.000, and a live `lfm` query returned ranked
-  results as clean JSON. No code changed in this pass — docs only.
+- **2026-06-13 (review closeout + M7 fix)** — Cross-checked all 19
+  architecture-review findings against the tasks that closed them; wrote
+  `docs/reviews/2026-06-13-closeout.md`. The pass found the one residual —
+  **M7**: `query_index._retrieve_cache` was an **unbounded** dict (the warm
+  service had fixed only the "useless per-query" half) — and **fixed it in the
+  same pass**: the cache is now LRU-capped at `RETRIEVE_CACHE_SIZE` (new config,
+  default 256; pop+reinsert on hit, drop least-recently-used on overflow), with
+  unit tests. So **19/19 findings are now closed.** Verification on `main`: 114
+  tests green, ruff clean, demo eval 1.000, and a live `lfm` query returned
+  ranked results as clean JSON.
 
 - **2026-06-13 (task 3.9 — ask.py cleanup, M3 + M4; Phase 3 complete)** —
   Cleaned up the Q&A CLI. **M3a (fragile quality check):** removed
