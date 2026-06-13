@@ -8,7 +8,13 @@ promote_collection swaps the alias and deletes exactly the right collections.
 import re
 import types
 
-import qdrant
+import pytest
+
+# qdrant.py imports qdrant_client at module load, which is absent on the bare
+# CI interpreter (no ML stack). Skip cleanly there, like the other qdrant tests.
+pytest.importorskip("qdrant_client")
+
+import qdrant  # noqa: E402  (must come after the importorskip guard)
 
 
 class FakeClient:
