@@ -24,9 +24,7 @@ from qdrant_client import models
 import hashlib
 import logging
 
-# Imported for its side effect: configures Settings.embed_model, which
-# VectorStoreIndex uses to embed nodes during the build.
-import model_setup  # noqa: F401
+import model_setup
 import qdrant
 from chunking import chunk_csharp
 from logging_setup import setup_logging
@@ -114,6 +112,7 @@ def build_index(force=False):
     replaces it without asking — handy for scripts and CI.
     """
     qdrant.ensure_qdrant()
+    model_setup.setup_models()  # configure the embed model VectorStoreIndex uses
     client = qdrant.get_qdrant_client()
     if client is None:
         raise RuntimeError("Could not connect to Qdrant")
@@ -245,6 +244,7 @@ def build_index_incremental():
     never creates a new collection or swaps the alias.
     """
     qdrant.ensure_qdrant()
+    model_setup.setup_models()  # configure the embed model VectorStoreIndex uses
     client = qdrant.get_qdrant_client()
     if client is None:
         raise RuntimeError("Could not connect to Qdrant")

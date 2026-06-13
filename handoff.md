@@ -4,9 +4,9 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 3.6 — pipeline test suite)
-**Repo state:** branch `phase-3-pipeline-tests`. Merged into `main` so far:
-PRs #1–#14 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.5).
+**Last updated:** 2026-06-13 (task 3.7 — lazy initialization)
+**Repo state:** branch `phase-3-lazy-init`. Merged into `main` so far:
+PRs #1–#15 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.6).
 
 ---
 
@@ -63,10 +63,12 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
   `(model_name, text_hash)` (`scripts/embedding_cache.py`), so a different
   model simply misses and recomputes — vectors from two models can never be
   confused. The cache also has an LRU size limit and writes once per query.
-- Importing `query_index` or `model_setup` does heavy work (model load) —
-  tests replace `model_setup` with a fake in `tests/conftest.py`. The
-  embedding cache no longer opens its database at import (it is built lazily
-  on first query).
+- ~~Importing `query_index` or `model_setup` does heavy work (model load) —
+  tests replace `model_setup` with a fake in `tests/conftest.py`.~~ **Closed
+  (task 3.7, M1).** Importing the pipeline configures no models and imports no
+  torch: the work moved into `model_setup.setup_models()`, called lazily from
+  the entry points (`build_query_engine`, `build_index`, `service.main`,
+  `ask`). The conftest fake is gone. The embedding cache was already lazy.
 - The whole stack now runs compose-managed (project `ai-agent`):
   `docker compose -f scripts/docker-compose.yml -p ai-agent up -d`.
   Both containers use `restart: unless-stopped` and are left running.
@@ -75,18 +77,18 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 1. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
    (embedding cache v2), 3.3 (safe index rebuild), 3.4 (incremental indexing),
-   3.5 (structured logging), and 3.6 (pipeline test suite) are done; next up is
-   3.7 (lazy initialization — no model loading or cache reading at import time,
-   so tests no longer need the `model_setup` fake) — see the plan table in
+   3.5 (structured logging), 3.6 (pipeline test suite), and 3.7 (lazy init) are
+   done; next up is 3.8 (security pass — Qdrant API key for non-local use, no
+   pickle loads left, request-size limits on `/search`) — see the plan table in
    `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is complete
    (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 →
-   0.760, a report per change). Remaining Phase 3 work: lazy init (3.7), the
-   security pass (3.8), and ask.py cleanup (3.9).
+   0.760, a report per change). Remaining Phase 3 work: the security pass (3.8)
+   and ask.py cleanup (3.9).
 
 ## How to verify the project right now
 
 ```bash
-.venv/bin/python -m pytest tests/ -q   # 97 tests with the full stack; heavy ones skip without it
+.venv/bin/python -m pytest tests/ -q   # 100 tests with the full stack; heavy ones skip without it
 .venv/bin/ruff check scripts/ eval/ tests/
 bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
@@ -99,6 +101,24 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
+
+- **2026-06-13 (task 3.7 — lazy initialization, M1)** — Moved the heavy
+  model setup out of import time. `scripts/model_setup.py` is now a single
+  guarded `setup_models()` function (imports moved inside; `import torch` only
+  runs when the embed model actually needs building). It is idempotent and a
+  **no-op for whichever of `Settings.embed_model` / `Settings.llm` is already
+  set**, so a test's `MockEmbedding` is never overridden or re-downloaded. The
+  side-effect `import model_setup  # noqa: F401` lines became plain imports +
+  an explicit `model_setup.setup_models()` call at each lazy entry point:
+  `build_query_engine()` (covers all of `query()`), `build_index()` +
+  `build_index_incremental()`, `service.main()`, and `ask()`. The
+  `tests/conftest.py` **model_setup fake is removed** — importing the pipeline
+  no longer loads a model (verified: `import query_index` leaves
+  `Settings._embed_model is None` and `torch` not in `sys.modules`). New
+  `tests/test_model_setup.py` locks the no-override + idempotency guards. **100
+  tests green, ruff clean**, demo eval unchanged at 1.000, integration test
+  still runs on `MockEmbedding`. No production behavior change — same models,
+  same device auto-detect, just lazy.
 
 - **2026-06-13 (task 3.6 — pipeline test suite, H5)** — Closed the three
   pipeline-coverage gaps; **no production code changed**, tests + one dev dep

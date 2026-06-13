@@ -9,6 +9,7 @@ with more code. Run it from the command line:
 """
 import logging
 
+import model_setup
 from query_index import query
 from llama_index.core import Settings
 
@@ -130,6 +131,7 @@ def ask(q, mode=None):
     the prompt, and calls the LLM (with the one-shot fallback). Returns the
     answer text, or a short message if nothing relevant was found.
     """
+    model_setup.setup_models()  # ensure Settings.llm is ready (lazy, plan 3.7)
     result = query(q)
 
     if not result["context"]:

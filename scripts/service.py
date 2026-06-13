@@ -50,7 +50,8 @@ def main():
     # embedding model + LLM, then warm the retrievers once so the first real
     # request does not pay the build cost.
     setup_logging()
-    import model_setup  # noqa: F401  (import side effect: configures Settings)
+    import model_setup
+    model_setup.setup_models()
     get_engine()
     app.run(host="0.0.0.0", port=settings.service_port)
 
