@@ -23,25 +23,22 @@ print = functools.partial(print, file=sys.stderr, flush=True)
 # noise cannot contaminate the JSON on stdout.
 import model_setup  # noqa: E402, F401
 import qdrant  # noqa: E402
+from config import settings  # noqa: E402
 from ranking import (  # noqa: E402
     expand_query, rrf_scores, score_candidates, blend_cross_encoder,
 )
 
-EMB_CACHE_PATH = "./.claude/cache/embeddings.pkl"
+EMB_CACHE_PATH = settings.emb_cache_path
 
-# Comma-separated suffixes for extra query variants. Put domain terms for
-# your codebase here (e.g. "implementation,.NET core backend") instead of
-# hard-coding them in the pipeline.
-QUERY_VARIANT_SUFFIXES = tuple(
-    s.strip()
-    for s in os.getenv("QUERY_VARIANT_SUFFIXES", "implementation").split(",")
-    if s.strip()
-)
+# Comma-separated suffixes for extra query variants (env QUERY_VARIANT_SUFFIXES).
+# Put domain terms for your codebase here (e.g. "implementation,.NET core
+# backend") instead of hard-coding them in the pipeline.
+QUERY_VARIANT_SUFFIXES = settings.query_variant_suffixes
 
 # How many of the top fused candidates go to the embedding re-rank. The cut is a
 # query-time knob (no reindex needed to change it), kept as an env var so its
 # effect on recall can be measured by the eval (production-readiness plan 2.2).
-RERANK_CANDIDATES = int(os.getenv("RERANK_CANDIDATES", "30"))
+RERANK_CANDIDATES = settings.rerank_candidates
 
 # Optional cross-encoder re-ranker (production-readiness plan 2.6). Off by
 # default (empty). When set to a model name, the candidate pool is re-scored by a
@@ -51,7 +48,7 @@ RERANK_CANDIDATES = int(os.getenv("RERANK_CANDIDATES", "30"))
 # query on CPU. Bigger models (e.g. BAAI/bge-reranker-base) are marginally better
 # but several times slower. It is blended, not used alone: pure cross-encoder
 # ordering scored worse, because it drops the BM25/keyword signal code search needs.
-CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL", "")
+CROSS_ENCODER_MODEL = settings.cross_encoder_model
 # Weight on the cross-encoder vs the RRF score in the blend (tuned on the eval).
 CROSS_ENCODER_WEIGHT = 0.85
 

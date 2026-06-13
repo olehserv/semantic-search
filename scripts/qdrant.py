@@ -3,10 +3,14 @@ import subprocess
 import time
 import os
 
-QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
-QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
+from config import settings
 
-COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "demo")
+# Public names kept for callers (query_index.py, build_index.py); values now
+# come from the central config layer (plan 3.1).
+QDRANT_HOST = settings.qdrant_host
+QDRANT_PORT = settings.qdrant_port
+
+COLLECTION_NAME = settings.collection_name
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,7 +33,7 @@ def ensure_qdrant():
     # Inside a container (QDRANT_AUTOSTART=0) we cannot run docker — just wait
     # for the Qdrant service (started via compose depends_on) to become
     # reachable.
-    if os.getenv("QDRANT_AUTOSTART", "1") != "1":
+    if not settings.qdrant_autostart:
         for _ in range(30):
             if get_qdrant_client() is not None:
                 print("✅ Qdrant is ready")

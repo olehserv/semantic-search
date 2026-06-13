@@ -9,10 +9,14 @@
 # Requires: Docker (for Qdrant) and Python 3.11+. The first run downloads the
 # embedding model (~400MB) and installs the ML stack into a local .venv.
 #
-# NOTE: it (re)builds the Qdrant collection named in scripts/qdrant.py
-# (COLLECTION_NAME). If you already have a real index in that collection, run
-# the demo against a throwaway Qdrant or change COLLECTION_NAME first.
+# NOTE: it (re)builds a dedicated throwaway collection, "demo-eval" (forced
+# below). The export overrides any QDRANT_COLLECTION you have set, so the demo
+# can never delete a real index (plan 3.1, H7).
 set -euo pipefail
+
+# Pin the demo to its own collection regardless of the caller's environment, so
+# a real index (e.g. one named via QDRANT_COLLECTION) is never touched.
+export QDRANT_COLLECTION="demo-eval"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CORPUS="$ROOT/eval/sample_corpus"

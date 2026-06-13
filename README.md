@@ -101,14 +101,30 @@ shim needs nothing else — no torch, no llama-index).
 
 ## Configuration
 
-| Setting | Where |
-|---------|-------|
-| Embedding model / device, LLM model | `model_setup.py` |
-| Qdrant host / port / collection name | `qdrant.py` |
+Deployment config is centralized in `scripts/config.py` (pydantic-settings) and
+read from environment variables — one typed place instead of scattered
+`os.getenv` calls. Defaults match the values the project ships with.
+
+| Setting | Env var | Default |
+|---------|---------|---------|
+| Qdrant host | `QDRANT_HOST` | `localhost` |
+| Qdrant port | `QDRANT_PORT` | `6333` |
+| Qdrant collection | `QDRANT_COLLECTION` | `demo` |
+| Qdrant autostart (Docker) | `QDRANT_AUTOSTART` | `1` (on) |
+| Embedding model | `EMBED_MODEL` | `BAAI/bge-base-en-v1.5` |
+| LLM model (ask.py) | `LLM_MODEL` | `llama3` |
+| Embedding cache path | `EMB_CACHE_PATH` | `./.claude/cache/embeddings.pkl` |
+| Re-rank candidate cut | `RERANK_CANDIDATES` | `30` |
+| Cross-encoder re-ranker | `CROSS_ENCODER_MODEL` | `""` (off) |
+| Service port | `PORT` | `8000` |
+| Query variants | `QUERY_VARIANT_SUFFIXES` | `implementation` (comma-separated; add domain terms, e.g. `implementation,.NET core backend`) |
+
+| Other | Where |
+|-------|-------|
+| Embedding device (CPU/GPU auto) | `model_setup.py` |
 | Which file types are indexed | `build_index.py` (`load_documents`) |
 | Chunking | `chunking.py` — C# files are cut on type/method borders with tree-sitter (namespace/class metadata on every chunk); other files use the `SentenceSplitter` in `build_index.py` |
 | Search depth, score weights | `query_index.py` / `ranking.py` |
-| Query variants | `QUERY_VARIANT_SUFFIXES` env var (comma-separated, default `implementation`). Add domain terms for your codebase, e.g. `implementation,.NET core backend` |
 
 ## Good to know
 

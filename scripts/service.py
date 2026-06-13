@@ -13,10 +13,9 @@ Endpoints:
     GET  /health  -> {"status": "ok"}
     POST /search  -> body {"query": "..."}; returns the query() JSON.
 """
-import os
-
 from flask import Flask, request, jsonify
 
+from config import settings
 from query_index import query, get_engine
 
 app = Flask(__name__)
@@ -45,7 +44,7 @@ def main():
     # request does not pay the build cost.
     import model_setup  # noqa: F401  (import side effect: configures Settings)
     get_engine()
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
+    app.run(host="0.0.0.0", port=settings.service_port)
 
 
 if __name__ == "__main__":
