@@ -33,7 +33,7 @@ English with analogies.
 
 | File | Role |
 |------|------|
-| `scripts/build_index.py` | Build or rebuild the Qdrant index (`--force` = no question asked) |
+| `scripts/build_index.py` | Build or rebuild the Qdrant index (`--force` = no question asked; `--incremental` = update only changed files in place) |
 | `scripts/query_index.py` | Hybrid search + ranking; CLI prints JSON |
 | `scripts/ranking.py` | The scoring math (only numpy, unit-tested) |
 | `scripts/service.py` | Long-running search service with the warm engine |
@@ -64,6 +64,7 @@ relative to the current directory.
 ```bash
 # 1. Build the index (run again after the code changes)
 python .claude/scripts/build_index.py            # --force = replace without asking
+python .claude/scripts/build_index.py --incremental   # only re-do changed/new/deleted files
 
 # 2. Start the search service (loads the model once, then stays warm)
 python .claude/scripts/service.py                # serves on localhost:8000
@@ -78,6 +79,17 @@ python .claude/scripts/query_index.py "where is authentication handled"
 # 4. Ask — get an LLM answer (needs Ollama)
 python .claude/scripts/ask.py "how does the request pipeline work"
 ```
+
+**Full rebuild vs `--incremental`.** A plain build (or `--force`) rebuilds the
+whole index into a fresh collection and swaps it in only on success — it can
+never destroy the live index, even if it crashes (the safe default). It re-reads
+and re-embeds every file. `--incremental` is faster on a small change: it stores
+a content hash per file and updates the **live** index in place — re-embedding
+only the changed and new files, deleting the vectors of files removed from disk,
+and leaving everything else alone. The trade-off: an interrupted incremental run
+can leave the index half-updated (just run it again — it recomputes the diff and
+finishes). Use a full rebuild after big changes; use `--incremental` for the
+day-to-day edit-a-few-files case.
 
 ### Use it from Claude Code (MCP)
 
