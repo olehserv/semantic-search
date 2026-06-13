@@ -25,7 +25,7 @@ import hashlib
 import os
 import sqlite3
 from array import array
-from time import time
+from time import time_ns
 
 
 class EmbeddingCache:
@@ -56,7 +56,7 @@ class EmbeddingCache:
 
     def _ensure_schema(self):
         """Create the table on first use. Safe to call every time."""
-        # last_used is a millisecond timestamp; it drives LRU eviction (oldest
+        # last_used is a nanosecond timestamp; it drives LRU eviction (oldest
         # last_used = evicted first). The primary key is (model_name, text_hash)
         # so the same text under two models lives in two separate rows.
         self.conn.execute(
@@ -97,7 +97,12 @@ class EmbeddingCache:
         embed_model.get_text_embedding(text) and stored. Everything happens in
         ONE transaction, so the whole call costs a single disk write (commit).
         """
-        now = int(time() * 1000)
+        # Nanosecond clock, not milliseconds: rapid back-to-back queries can fall
+        # inside the same millisecond, which would give several rows an identical
+        # last_used and make LRU eviction order (ORDER BY last_used) a tie broken
+        # arbitrarily by rowid — so a just-touched row could be evicted before an
+        # older one. Nanosecond resolution keeps each call strictly ordered.
+        now = time_ns()
         hashes = [self._hash(t) for t in texts]
 
         # One read for all the rows we might already have. We de-duplicate the
