@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     # before the body is parsed or embedded. Queries are short; 64 KB is ample.
     max_content_length: int = Field(65536, validation_alias="MAX_CONTENT_LENGTH")
 
+    # --- ask.py (plan 3.9, M3) ---
+    # Token budget for the code context ask.py sends to the LLM, counted with the
+    # LLM tokenizer (not characters). llama3 has an 8k window; this leaves room
+    # for the prompt scaffold + question + answer.
+    max_context_tokens: int = Field(4000, validation_alias="MAX_CONTEXT_TOKENS")
+
     @property
     def query_variant_suffixes(self) -> tuple[str, ...]:
         """Comma-separated suffixes for extra query variants. Reproduces the

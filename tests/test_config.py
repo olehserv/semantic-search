@@ -32,6 +32,7 @@ CONFIG_ENV_VARS = (
     "QDRANT_API_KEY",
     "QDRANT_HTTPS",
     "MAX_CONTENT_LENGTH",
+    "MAX_CONTEXT_TOKENS",
 )
 
 
@@ -60,6 +61,7 @@ def test_defaults(clean_env):
     assert s.qdrant_api_key == ""
     assert s.qdrant_https is False
     assert s.max_content_length == 65536
+    assert s.max_context_tokens == 4000
 
 
 def test_env_overrides(clean_env):
@@ -72,6 +74,7 @@ def test_env_overrides(clean_env):
     clean_env.setenv("QDRANT_API_KEY", "secret")
     clean_env.setenv("QDRANT_HTTPS", "1")
     clean_env.setenv("MAX_CONTENT_LENGTH", "1024")
+    clean_env.setenv("MAX_CONTEXT_TOKENS", "2048")
     s = Settings()
     assert s.collection_name == "lfm"
     assert s.qdrant_port == 7000
@@ -83,6 +86,7 @@ def test_env_overrides(clean_env):
     assert s.qdrant_api_key == "secret"
     assert s.qdrant_https is True
     assert s.max_content_length == 1024
+    assert s.max_context_tokens == 2048
 
 
 def test_query_variant_suffixes_default(clean_env):

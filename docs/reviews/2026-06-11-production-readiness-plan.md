@@ -1,9 +1,10 @@
 # Production-Readiness Plan — Semantic Code Search
 
 **Date:** 2026-06-11
-**Status:** Phase 0 ✅ done (2026-06-11, merged). Phase 1 ✅ done
-(branch `phase-1-search-service`, 2026-06-12; container stack verified with
-compose on 2026-06-13). Phases 2–3 are open. Live status is in `/handoff.md`.
+**Status:** **All phases ✅ done (2026-06-13).** Phase 0 (quick fixes), Phase 1
+(MCP server + warm service, container stack verified with compose), Phase 2
+(search quality, eval-gated: Recall@5 0.600 → 0.912, nDCG@5 0.343 → 0.760), and
+Phase 3 (operations hardening, tasks 3.1–3.9). Live status is in `/handoff.md`.
 **Input:** `2026-06-11-architecture-review.md` (same directory) — the IDs
 (C1…C4, H1…H7, M1…M11) point to findings in that document.
 **Main rule:** every change to search quality must be checked with the eval
@@ -67,7 +68,7 @@ every merged change has a before/after eval report.
 | 3.6 | Pipeline test suite: unit tests for fusion/ranking with fake retrievers, an integration test against a throwaway Qdrant container (testcontainers), an MCP protocol test. **Done (2026-06-13):** `test_pipeline_query.py` (full `query()` with fake retrievers), `test_mcp_protocol.py` (in-memory initialize/list/call round-trip), `test_integration_qdrant.py` (testcontainers `qdrant/qdrant` + MockEmbedding build→query). No production code change. Push CI stays fast; the full suite runs manually via `tests-full.yml`. | H5 | L |
 | 3.7 | Lazy initialization — no model loading or cache reading at import time (use init functions or lazy singletons). Then tests no longer need the `model_setup` fake. **Done (2026-06-13):** `model_setup.setup_models()` (guarded, idempotent, imports torch only when building the embed model) replaces the import-time side effects; called lazily from `build_query_engine`/`build_index`/`service.main`/`ask`. The conftest `model_setup` fake is removed; importing the pipeline loads no model and no torch. | M1 | M |
 | 3.8 | Security pass: Qdrant API key for non-local use, no pickle loads left, request size limits on `/search`. **Done (2026-06-13):** `QDRANT_API_KEY` + `QDRANT_HTTPS` config flow to the single `QdrantClient`; `/search` capped by `MAX_CONTENT_LENGTH` (413) and rejects non-string queries (400); no pickle loads exist (BM25 from Qdrant, SQLite cache) — `tests/test_no_pickle.py` enforces it. Local compose stays unauthenticated; key is opt-in via env. | M2, M10 | M |
-| 3.9 | `ask.py` cleanup: logs to stderr, larger context budget (count tokens, not chars), replace the phrase-matching quality check with a structured self-check or remove the retry. | M3, M4 | M |
+| 3.9 | `ask.py` cleanup: logs to stderr, larger context budget (count tokens, not chars), replace the phrase-matching quality check with a structured self-check or remove the retry. **Done (2026-06-13):** logs to stderr (3.5); `MAX_CONTEXT_CHARS` → token-counted `build_context()` with `MAX_CONTEXT_TOKENS` (default 4000); phrase-matching retry **removed** — `ask()` makes one LLM call. New `tests/test_ask.py`. | M3, M4 | M |
 
 **Done when:** the system can be deployed with `docker compose up` and env-only
 config; index rebuilds never destroy data; logs are structured; the pipeline

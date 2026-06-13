@@ -4,9 +4,9 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 3.8 — security pass)
-**Repo state:** branch `phase-3-security-pass`. Merged into `main` so far:
-PRs #1–#16 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.7).
+**Last updated:** 2026-06-13 (task 3.9 — ask.py cleanup; **Phase 3 complete**)
+**Repo state:** branch `phase-3-ask-cleanup`. Merged into `main` so far:
+PRs #1–#17 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.8).
 
 ---
 
@@ -75,16 +75,18 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
-   (embedding cache v2), 3.3 (safe index rebuild), 3.4 (incremental indexing),
-   3.5 (structured logging), 3.6 (pipeline test suite), 3.7 (lazy init), and
-   3.8 (security pass) are done; next up is **3.9 (ask.py cleanup** — logs to
-   stderr [already done in 3.5], a larger context budget that counts tokens not
-   chars, and replacing the phrase-matching quality check with a structured
-   self-check or removing the retry), the **last Phase 3 item** — see the plan
-   table in `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is
-   complete (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912,
-   nDCG@5 0.343 → 0.760, a report per change).
+1. **Phases 0–3 are all complete.** Every task in
+   `docs/reviews/2026-06-11-production-readiness-plan.md` is done: Phase 0 (quick
+   fixes), Phase 1 (MCP server + warm service), Phase 2 (search quality,
+   eval-gated: Recall@5 0.600 → 0.912, nDCG@5 0.343 → 0.760), and Phase 3
+   (operations hardening, tasks 3.1–3.9). The "done when" criteria for Phase 3
+   are met: deployable with `docker compose up` + env-only config; rebuilds never
+   destroy data (alias swap + incremental); logs are structured; the pipeline is
+   covered by tests (incl. a manual full-stack + real-Qdrant job).
+2. **No planned work remains.** Possible future directions, none scheduled: other
+   languages beyond .NET (keep the chunker pluggable), automatic index refresh
+   (file-watching) inside the service, and scaling past one service instance —
+   all explicitly **out of scope** in the plan's "Out of scope (for now)".
 
 ## How to verify the project right now
 
@@ -102,6 +104,24 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
+
+- **2026-06-13 (task 3.9 — ask.py cleanup, M3 + M4; Phase 3 complete)** —
+  Cleaned up the Q&A CLI. **M3a (fragile quality check):** removed
+  `ensure_answer_fallback()` and its phrase-matching ("not enough information"…)
+  retry entirely (decided with Oleh) — `ask()` now makes a **single** LLM call.
+  **M3b (tiny char budget):** replaced `MAX_CONTEXT_CHARS = 6000` with a
+  **token-counted** budget — new `build_context()` joins whole chunks (never
+  slices a snippet) in rank order using `Settings.tokenizer`, stopping before
+  `settings.max_context_tokens` (new config, default 4000; env
+  `MAX_CONTEXT_TOKENS`). `ask()` fetches `query(q, top_k=12)` up front so the
+  bigger budget has chunks to fill, then trims. No new dependency (`tiktoken`
+  already present via llama-index). **M4 (logs to stdout):** already fixed in
+  3.5 (logger.debug → stderr; only the answer prints to stdout). New
+  `tests/test_ask.py` (7: detect_mode, token-budget trimming incl. always-keep-
+  top, happy path = exactly one LLM call, empty-context skip, error returned not
+  raised) + a `MAX_CONTEXT_TOKENS` case in `test_config.py`. **112 tests green,
+  ruff clean**, demo eval unchanged at 1.000 (no retrieval change). **This was
+  the last Phase 3 item — Phases 0–3 are now all complete.**
 
 - **2026-06-13 (task 3.8 — security pass, M2 + M10)** — Three parts.
   **(1) Qdrant auth (M10):** new `QDRANT_API_KEY` (default `""` = unauthenticated,
