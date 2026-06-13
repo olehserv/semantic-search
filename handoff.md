@@ -4,10 +4,9 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 3.1 — config layer)
-**Repo state:** branch `phase-3-config-layer`. Merged into `main` so far:
-PRs #1–#8 (Phase 0 through Phase 2, ending with task 2.6 — optional
-cross-encoder re-ranker).
+**Last updated:** 2026-06-13 (task 3.4 — incremental indexing)
+**Repo state:** branch `phase-3-incremental-indexing`. Merged into `main` so far:
+PRs #1–#11 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.3).
 
 ---
 
@@ -22,7 +21,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 | Area | State |
 |------|-------|
-| Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). C# files get code-aware chunks from `scripts/chunking.py` (task 2.4, tree-sitter); other files keep the `SentenceSplitter`. Crash-safe rebuild via a Qdrant alias swap (task 3.3, H6): builds into `<name>-<timestamp>`, swaps the alias, deletes the old one — no destructive delete-first. No incremental mode yet (task 3.4). |
+| Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). C# files get code-aware chunks from `scripts/chunking.py` (task 2.4, tree-sitter); other files keep the `SentenceSplitter`. Crash-safe rebuild via a Qdrant alias swap (task 3.3, H6): builds into `<name>-<timestamp>`, swaps the alias, deletes the old one — no destructive delete-first. **Incremental mode (task 3.4, M6):** `--incremental` stores a `file_hash` per file (in the Qdrant payload, excluded from embedding) and updates the live index in place — re-embeds only changed/new files, deletes removed files' vectors, falls back to a full build when no index exists. |
 | Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Fusion is RRF over ranks since task 2.1 (H1 fixed; candidates cut after fusion, H2 fully closed — 2.2 found the cut never bites). Optional cross-encoder re-ranker (task 2.6) behind `CROSS_ENCODER_MODEL`, **off by default**. |
 | Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host (first query 0.65 s, second 0.10 s — was ~30 s) **and in Docker** (2026-06-13): compose stack up, same top result + score as host, BM25 nodes loaded from Qdrant inside the container, warm queries 0.25 s, restart loads the model from the `hf_models` volume (no re-download), engine built once per process. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
@@ -78,13 +77,13 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
    cross-encoder re-ranker, off by default; `blend_cross_encoder()` + tests, new
    baseline, docs. Default behavior unchanged (gate: 0.912/0.716/0.760 reproduced).
 2. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
-   (embedding cache v2), and 3.3 (safe index rebuild) are done; next up is 3.4
-   (incremental indexing) — see the plan table in
+   (embedding cache v2), 3.3 (safe index rebuild), and 3.4 (incremental
+   indexing) are done; next up is 3.5 (structured logging — replace `print`
+   with the `logging` module) — see the plan table in
    `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is complete
    (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 →
-   0.760, a report per change). Remaining Phase 3 work: incremental indexing,
-   structured logging, the pipeline test suite, lazy init, the security pass,
-   and ask.py cleanup.
+   0.760, a report per change). Remaining Phase 3 work: structured logging, the
+   pipeline test suite, lazy init, the security pass, and ask.py cleanup.
 
 ## How to verify the project right now
 
@@ -95,6 +94,31 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
+
+- **2026-06-13 (task 3.4 — incremental indexing, M6)** — New `--incremental`
+  mode in `scripts/build_index.py`. Each file now carries a `file_hash`
+  (sha256 of its text) stamped in `make_nodes` and — critically — added to
+  `excluded_embed_metadata_keys`/`excluded_llm_metadata_keys`, so it is pure
+  bookkeeping and never changes the vectors (eval numbers stay identical to a
+  full rebuild). The hash lives in the Qdrant point payload, so the index is its
+  own manifest (no side file to drift). `build_index_incremental()` resolves the
+  alias to the live collection, reads the old `{file_path: file_hash}` map by
+  scrolling (`load_file_hashes`), diffs it against disk (`diff_files` →
+  changed/new/deleted), deletes points of changed+deleted files by `file_path`
+  filter (`delete_files`), and re-embeds only changed+new files **in place**
+  (no new collection, no alias swap). No index yet → falls back to a full
+  `build_index(force=True)`. **Trade-off (decided with Oleh):** in-place, so an
+  interrupted run can leave the index half-updated — a re-run recomputes the
+  diff and converges; the full rebuild keeps the 3.3 crash-safe alias swap.
+  New `tests/test_incremental.py` (9 tests: diff logic, the embed-exclusion
+  invariant, and a fake-client orchestration test for delete/re-index). **86
+  tests green, ruff clean.** Verified e2e on a throwaway collection (no-op /
+  edit / add / delete all correct) and the demo eval stays 1.000/1.000/1.000
+  (full-build path + quality unchanged). Docs: README (full vs incremental
+  trade-off), this handoff, the plan doc. Note: `file_path` from
+  `SimpleDirectoryReader` is absolute, so incremental must be run from the same
+  project root each time — same assumption the hardcoded `PROJECT_PATH="./"`
+  already makes.
 
 - **2026-06-13 (task 3.1 — config layer, H7)** — New `scripts/config.py`: a
   pydantic-settings `Settings` class + module singleton `settings` that reads all

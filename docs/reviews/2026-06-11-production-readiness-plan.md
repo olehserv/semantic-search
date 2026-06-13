@@ -62,7 +62,7 @@ every merged change has a before/after eval report.
 | 3.1 | Config layer (env vars, e.g. `pydantic-settings`): collection name, Qdrant host/port, model names, cache paths. Give the eval demo its own collection so `run_demo.sh` can never delete a real index. | H7 | M |
 | 3.2 | Embedding cache v2: key = `(model_name, text_hash)`, size limit (LRU), one disk write per query, drop the cache when the model changes. Consider SQLite instead of pickle. | H3, M2, M7 | M |
 | 3.3 | Safe index rebuild: build into `<collection>-<timestamp>`, switch a Qdrant alias on success, delete the old one. Rebuilds become crash-safe with zero downtime. | H6 | M |
-| 3.4 | Incremental indexing: track file content hashes; re-embed only changed files; remove vectors of deleted files. | M6 | L |
+| 3.4 | Incremental indexing: track file content hashes; re-embed only changed files; remove vectors of deleted files. **Done (2026-06-13):** `--incremental` flag stores a `file_hash` per file in the Qdrant payload (excluded from embedding, so vectors/eval are unchanged), diffs disk vs the live index, and updates it in place (re-embed changed/new, delete removed). In-place trade-off vs the 3.3 alias swap; full rebuild stays the crash-safe default. | M6 | L |
 | 3.5 | Replace `print` logging with the `logging` module (levels, structure); remove the replaced `print` built-in. | M11 | S |
 | 3.6 | Pipeline test suite: unit tests for fusion/ranking with fake retrievers, an integration test against a throwaway Qdrant container (testcontainers), an MCP protocol test. | H5 | L |
 | 3.7 | Lazy initialization — no model loading or cache reading at import time (use init functions or lazy singletons). Then tests no longer need the `model_setup` fake. | M1 | M |

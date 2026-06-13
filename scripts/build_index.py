@@ -20,7 +20,9 @@ from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageCon
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import TextNode
 from llama_index.vector_stores.qdrant import QdrantVectorStore
+from qdrant_client import models
 from datetime import datetime
+import hashlib
 
 # Imported for its side effect: configures Settings.embed_model, which
 # VectorStoreIndex uses to embed nodes during the build.
@@ -29,6 +31,12 @@ import qdrant
 from chunking import chunk_csharp
 
 PROJECT_PATH = "./"
+
+
+def file_content_hash(text):
+    """A stable fingerprint of a file's text. Same text -> same hash, so the
+    incremental build (task 3.4) can tell when a file actually changed."""
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def load_documents():
@@ -64,6 +72,15 @@ def make_nodes(docs):
     nodes = []
     fallback_docs = []
     for doc in docs:
+        # WHAT: a content fingerprint of the whole file, stamped on every chunk
+        # of that file. WHY: incremental indexing (task 3.4) compares these
+        # hashes to find which files changed. It is bookkeeping only — embedding
+        # it would change the vector and break eval reproducibility, so we keep
+        # it out of the embedded text and the LLM context.
+        doc.metadata["file_hash"] = file_content_hash(doc.text)
+        doc.excluded_embed_metadata_keys.append("file_hash")
+        doc.excluded_llm_metadata_keys.append("file_hash")
+
         chunks = None
         if (doc.metadata.get("file_name") or "").endswith(".cs"):
             chunks = chunk_csharp(doc.text)
@@ -145,6 +162,128 @@ def build_index(force=False):
     print(f"[DEBUG] [{datetime.now()}] ✅ Index built and '{qdrant.COLLECTION_NAME}' "
           f"now points to '{new_collection}'")
 
+
+# --- Incremental indexing (plan 3.4, finding M6) -----------------------------
+#
+# A full rebuild re-reads, re-chunks, and re-embeds every file. Incremental mode
+# only touches what actually changed on disk: it compares each file's content
+# hash against the hash stored on the points already in Qdrant, then re-embeds
+# the changed/new files and deletes the points of files removed from disk.
+# Untouched files are never read or rewritten.
+
+def diff_files(old, new):
+    """Compare two {file_path: file_hash} maps. Return three sets of paths.
+
+    - changed:   in both, but the hash differs (file edited)
+    - new_files: only in `new` (file added since last index)
+    - deleted:   only in `old` (file removed from disk)
+    """
+    changed = {p for p in new if p in old and new[p] != old[p]}
+    new_files = {p for p in new if p not in old}
+    deleted = {p for p in old if p not in new}
+    return changed, new_files, deleted
+
+
+def load_file_hashes(client, collection):
+    """Read the {file_path: file_hash} the live index already knows about.
+
+    Scrolls the collection asking only for the two payload fields we need (no
+    vectors, no chunk text), paginated like query_index.load_all_nodes. A point
+    indexed before task 3.4 has no `file_hash`; it reads as None, so its file
+    looks "changed" and gets re-indexed once — harmless.
+    """
+    hashes = {}
+    offset = None
+    while True:
+        points, offset = client.scroll(
+            collection_name=collection,
+            with_payload=["file_path", "file_hash"],
+            with_vectors=False,
+            limit=256,
+            offset=offset,
+        )
+        for p in points:
+            payload = p.payload or {}
+            path = payload.get("file_path")
+            if path is not None:
+                # Many chunks share a file; they carry the same hash, so the
+                # last write wins and the map ends up one entry per file.
+                hashes[path] = payload.get("file_hash")
+        if offset is None:
+            break
+    return hashes
+
+
+def delete_files(client, collection, paths):
+    """Remove every point whose `file_path` is in `paths` (delete-by-filter)."""
+    for path in paths:
+        client.delete(
+            collection_name=collection,
+            points_selector=models.FilterSelector(
+                filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="file_path",
+                            match=models.MatchValue(value=path),
+                        )
+                    ]
+                )
+            ),
+        )
+
+
+def build_index_incremental():
+    """Update the live index in place: re-embed only changed/new files and drop
+    the vectors of files deleted from disk.
+
+    Falls back to a full build when there is no index yet (nothing to diff
+    against). Works on the collection the alias currently resolves to, so it
+    never creates a new collection or swaps the alias.
+    """
+    qdrant.ensure_qdrant()
+    client = qdrant.get_qdrant_client()
+    if client is None:
+        raise RuntimeError("Could not connect to Qdrant")
+
+    live = qdrant.resolve_active_collection(client, qdrant.COLLECTION_NAME)
+    if live is None:
+        print("[DEBUG] No existing index — doing a full build instead.")
+        return build_index(force=True)
+
+    print(f"[DEBUG] [{datetime.now()}] Incremental update of '{live}'")
+
+    # Old state: what the index already holds. New state: what is on disk now.
+    # The new hashes use the same function make_nodes stamps with, so a file's
+    # disk hash and its stored hash match exactly when it is unchanged.
+    old = load_file_hashes(client, live)
+    docs = load_documents()
+    new = {doc.metadata["file_path"]: file_content_hash(doc.text) for doc in docs}
+
+    changed, new_files, deleted = diff_files(old, new)
+    to_reindex = changed | new_files
+
+    print(f"[DEBUG] changed: {len(changed)}, new: {len(new_files)}, "
+          f"deleted: {len(deleted)}")
+
+    if not to_reindex and not deleted:
+        print("[DEBUG] Nothing changed — index left untouched.")
+        return
+
+    # Drop points of edited files (their fresh chunks are re-added below) and of
+    # files removed from disk (gone for good).
+    delete_files(client, live, changed | deleted)
+
+    if to_reindex:
+        nodes = make_nodes([d for d in docs if d.metadata["file_path"] in to_reindex])
+        print(f"[DEBUG] [{datetime.now()}] Re-embedding {len(nodes)} chunks "
+              f"from {len(to_reindex)} files...")
+        vector_store = QdrantVectorStore(client=client, collection_name=live)
+        storage_context = StorageContext.from_defaults(vector_store=vector_store)
+        VectorStoreIndex(nodes, storage_context=storage_context, show_progress=True)
+
+    print(f"[DEBUG] [{datetime.now()}] ✅ Incremental update done on '{live}'")
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -153,4 +292,13 @@ if __name__ == "__main__":
         "-y", "--force", action="store_true",
         help="replace an existing collection without prompting",
     )
-    build_index(force=parser.parse_args().force)
+    parser.add_argument(
+        "-i", "--incremental", action="store_true",
+        help="update the live index in place: only re-embed changed/new files "
+             "and drop deleted ones (no full rebuild, no alias swap)",
+    )
+    args = parser.parse_args()
+    if args.incremental:
+        build_index_incremental()
+    else:
+        build_index(force=args.force)
