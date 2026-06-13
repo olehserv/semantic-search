@@ -5,6 +5,12 @@ The one-time indexing step. It reads the code files, cuts them into chunks
 vector with the embedding model, and stores the vectors in Qdrant. Run it once
 before searching, and again whenever the code changes.
 
+Crash-safe rebuild (plan 3.3, finding H6): instead of deleting the old index
+first, we build into a NEW timestamped collection, then atomically point the
+Qdrant alias (the name the query side uses) at it, then delete the old one.
+If the build crashes, the old index keeps serving queries untouched. See
+qdrant.promote_collection.
+
 Run from the root of the project you want to search:
 
     python scripts/build_index.py            # asks before replacing an index
@@ -91,14 +97,12 @@ def build_index(force=False):
     client = qdrant.get_qdrant_client()
     if client is None:
         raise RuntimeError("Could not connect to Qdrant")
-    qdrant_cols = client.get_collections()
-    print("Collections:", qdrant_cols)
+    print("Collections:", client.get_collections())
 
-    # get_collections() returns a CollectionsResponse, not a list of names —
-    # `name in response` never matched, so the replace guard was dead code.
-    existing = [c.name for c in qdrant_cols.collections]
-    if qdrant.COLLECTION_NAME in existing and not force:
-        print(f"Replace existing Qdrant collection '{qdrant.COLLECTION_NAME}'? (y/n)")
+    # resolve_active_collection follows the alias, so the prompt still fires
+    # once COLLECTION_NAME is an alias (aliases are not listed as collections).
+    if qdrant.resolve_active_collection(client, qdrant.COLLECTION_NAME) and not force:
+        print(f"Replace existing Qdrant index '{qdrant.COLLECTION_NAME}'? (y/n)")
         if input().lower() != "y":
             print(f"[DEBUG] [{datetime.now()}] Terminated.")
             return
@@ -110,31 +114,36 @@ def build_index(force=False):
     nodes = make_nodes(docs)
 
     print(f"[DEBUG] [{datetime.now()}] Total nodes: {len(nodes)}")
-    
-    try:
-        client.delete_collection(qdrant.COLLECTION_NAME)
-    except Exception as e:
-        print(f"Collection not found, skipping delete ({e})")
-    
-    vector_store = QdrantVectorStore(
-        client=client,
-        collection_name=qdrant.COLLECTION_NAME
-    )
 
-    print(f"[DEBUG] [{datetime.now()}] Building index in Qdrant...")
+    # Build into a fresh, timestamped collection — NOT the live one. Nothing is
+    # deleted until this succeeds and the alias is swapped below.
+    new_collection = qdrant.new_collection_name(qdrant.COLLECTION_NAME)
+    vector_store = QdrantVectorStore(client=client, collection_name=new_collection)
+
+    print(f"[DEBUG] [{datetime.now()}] Building index in '{new_collection}'...")
 
     # Wire the vector store through a StorageContext so the index is actually
     # persisted to Qdrant. Passing vector_store= to the constructor alone builds
     # an in-memory index and never creates/populates the Qdrant collection.
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
-    VectorStoreIndex(
-        nodes,
-        storage_context=storage_context,
-        show_progress=True
-    )
+    try:
+        VectorStoreIndex(nodes, storage_context=storage_context, show_progress=True)
+    except BaseException:
+        # On any failure (including Ctrl-C) drop the half-built collection so it
+        # cannot linger as an orphan; the live alias was never touched.
+        try:
+            client.delete_collection(new_collection)
+        except Exception as e:
+            print(f"[DEBUG] could not clean up '{new_collection}' ({e})")
+        raise
 
-    print(f"[DEBUG] [{datetime.now()}] ✅ Index successfully built in Qdrant")
+    # Success: atomically point the alias at the new collection and delete the
+    # old index (and any crashed-build leftovers).
+    qdrant.promote_collection(client, qdrant.COLLECTION_NAME, new_collection)
+
+    print(f"[DEBUG] [{datetime.now()}] ✅ Index built and '{qdrant.COLLECTION_NAME}' "
+          f"now points to '{new_collection}'")
 
 if __name__ == "__main__":
     import argparse

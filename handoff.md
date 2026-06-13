@@ -22,7 +22,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 | Area | State |
 |------|-------|
-| Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). C# files get code-aware chunks from `scripts/chunking.py` (task 2.4, tree-sitter); other files keep the `SentenceSplitter`. Still destructive (deletes the collection first), no incremental mode. |
+| Indexing (`scripts/build_index.py`) | Works. `--force` flag for scripts (Phase 0.4). C# files get code-aware chunks from `scripts/chunking.py` (task 2.4, tree-sitter); other files keep the `SentenceSplitter`. Crash-safe rebuild via a Qdrant alias swap (task 3.3, H6): builds into `<name>-<timestamp>`, swaps the alias, deletes the old one — no destructive delete-first. No incremental mode yet (task 3.4). |
 | Search (`scripts/query_index.py` + `scripts/ranking.py`) | Works after a build. BM25 is rebuilt **in memory from Qdrant** (no `bm25.pkl` anymore); an empty collection gives a clear "run build_index.py" error. Scoring math in `ranking.py` (pure numpy, tested). Fusion is RRF over ranks since task 2.1 (H1 fixed; candidates cut after fusion, H2 fully closed — 2.2 found the cut never bites). Optional cross-encoder re-ranker (task 2.6) behind `CROSS_ENCODER_MODEL`, **off by default**. |
 | Search service (`scripts/service.py`) | **New (Phase 1).** Flask, warm engine. Verified on host (first query 0.65 s, second 0.10 s — was ~30 s) **and in Docker** (2026-06-13): compose stack up, same top result + score as host, BM25 nodes loaded from Qdrant inside the container, warm queries 0.25 s, restart loads the model from the `hf_models` volume (no re-download), engine built once per process. |
 | Q&A (`scripts/ask.py`) | Works with local Ollama (`llama3`). Small context budget, weak retry logic. |
@@ -77,18 +77,19 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 1. **Review + merge the 2.6 PR** (branch `spike/cross-encoder-rerank`): optional
    cross-encoder re-ranker, off by default; `blend_cross_encoder()` + tests, new
    baseline, docs. Default behavior unchanged (gate: 0.912/0.716/0.760 reproduced).
-2. **Continue Phase 3 (operations hardening).** Task 3.1 (config layer) is done;
-   next up is 3.2 (embedding cache v2) — see the plan table in
+2. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
+   (embedding cache v2), and 3.3 (safe index rebuild) are done; next up is 3.4
+   (incremental indexing) — see the plan table in
    `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is complete
    (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 →
-   0.760, a report per change). Remaining Phase 3 work: safe/incremental indexing
-   (no destructive rebuild),
-   env-only deploy, the full-stack integration job hinted at in `ci.yml`.
+   0.760, a report per change). Remaining Phase 3 work: incremental indexing,
+   structured logging, the pipeline test suite, lazy init, the security pass,
+   and ask.py cleanup.
 
 ## How to verify the project right now
 
 ```bash
-.venv/bin/python -m pytest tests/ -q   # 34 tests (heavy ones skip without the ML stack)
+.venv/bin/python -m pytest tests/ -q   # 77 tests (heavy ones skip without the ML stack)
 .venv/bin/ruff check scripts/ eval/ tests/
 bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
