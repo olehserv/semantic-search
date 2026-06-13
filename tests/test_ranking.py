@@ -11,7 +11,9 @@ import pytest
 
 pytest.importorskip("numpy")
 
-from ranking import cosine, expand_query, rrf_scores, score_candidates
+from ranking import (
+    blend_cross_encoder, cosine, expand_query, rrf_scores, score_candidates,
+)
 
 
 def node(node_id):
@@ -148,4 +150,38 @@ def test_results_keep_input_order_not_sorted():
     embs = {"a": emb, "b": emb}
 
     result = score_candidates(nodes, fused, emb, embs)
+    assert [n.node_id for n, _ in result] == ["b", "a"]
+
+
+# ── blend_cross_encoder ──────────────────────────────────────────────────────
+
+def test_blend_cross_encoder_sigmoid_of_zero_is_half():
+    # logit 0 -> sigmoid 0.5; with weight 1.0 the RRF term drops out.
+    scored = dict_scores(
+        blend_cross_encoder([node("a")], [0.0], {"a": 0.0}, weight=1.0)
+    )
+    assert scored["a"] == pytest.approx(0.5)
+
+
+def test_blend_cross_encoder_higher_logit_ranks_higher():
+    nodes = [node("low"), node("high")]
+    scored = dict_scores(
+        blend_cross_encoder(nodes, [-2.0, 2.0], {}, weight=1.0)
+    )
+    assert scored["high"] > scored["low"]
+
+
+def test_blend_cross_encoder_weight_zero_is_pure_rrf():
+    nodes = [node("a"), node("b")]
+    fused = {"a": 0.8, "b": 0.2}
+    scored = dict_scores(
+        blend_cross_encoder(nodes, [5.0, -5.0], fused, weight=0.0)
+    )
+    assert scored["a"] == pytest.approx(0.8)
+    assert scored["b"] == pytest.approx(0.2)
+
+
+def test_blend_cross_encoder_keeps_input_order():
+    nodes = [node("b"), node("a")]
+    result = blend_cross_encoder(nodes, [0.1, 0.9], {}, weight=1.0)
     assert [n.node_id for n, _ in result] == ["b", "a"]

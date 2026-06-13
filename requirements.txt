@@ -6,6 +6,9 @@ llama-index-vector-stores-qdrant==0.10.1
 llama-index-embeddings-huggingface==0.7.0
 llama-index-llms-ollama==0.10.1
 llama-index-retrievers-bm25==0.7.1
+# Used directly for the optional cross-encoder re-ranker (query_index.py, plan
+# 2.6); also pulled in transitively by the huggingface embeddings.
+sentence-transformers==5.5.1
 qdrant-client==1.18.0
 torch==2.12.0
 numpy==2.4.6

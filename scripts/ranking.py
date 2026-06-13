@@ -57,6 +57,27 @@ def rrf_scores(ranked_lists, weights=None, k=RRF_K):
     return {nid: s / best_possible for nid, s in fused.items()}
 
 
+def blend_cross_encoder(nodes, ce_logits, fused_scores, weight=0.85):
+    """Blend cross-encoder relevance with the RRF score (plan 2.6).
+
+    final = weight * sigmoid(cross-encoder logit) + (1 - weight) * RRF score
+
+    The cross-encoder reads each (query, chunk) pair jointly, so it ranks better
+    than the bi-encoder cosine — but used alone it drops the BM25/keyword signal,
+    so it is blended with RRF here (same shape as score_candidates, cross-encoder
+    in place of cosine). sigmoid maps the unbounded logit to 0-1 to match RRF.
+
+    nodes      : candidate nodes exposing .node_id, aligned with ce_logits
+    ce_logits  : raw cross-encoder scores, one per node
+    Returns [(node, final_score), ...] in input order (not sorted).
+    """
+    scored = []
+    for n, logit in zip(nodes, ce_logits):
+        ce = 1.0 / (1.0 + np.exp(-float(logit)))
+        scored.append((n, weight * ce + (1 - weight) * fused_scores.get(n.node_id, 0.0)))
+    return scored
+
+
 def score_candidates(nodes, fused_scores, query_emb, text_embeddings,
                      alpha=0.7):
     """Blend the RRF fusion with an embedding re-rank into one final score.
