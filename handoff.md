@@ -4,9 +4,9 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 3.5 — structured logging)
-**Repo state:** branch `phase-3-structured-logging`. Merged into `main` so far:
-PRs #1–#12 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.4).
+**Last updated:** 2026-06-13 (task 3.6 — pipeline test suite)
+**Repo state:** branch `phase-3-pipeline-tests`. Merged into `main` so far:
+PRs #1–#14 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.5).
 
 ---
 
@@ -28,7 +28,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 | Agent integration (`scripts/mcp_server.py`, `.mcp.json`) | **Real MCP server (Phase 1).** Official `mcp` SDK, FastMCP, stdio; one tool `search_codebase` that forwards to the service over HTTP with a timeout. Verified end-to-end with an MCP stdio client: initialize → tools/list → tools/call returns ranked results; service down → structured `{"error", "hint"}`. Legacy `mcp.json` deleted. |
 | Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 34 passing unit tests (heavy tests skip without the ML stack), end-to-end demo. Demo checked 2026-06-11: 1.000 on all metrics for the 8 toy questions — the toy set is saturated. A real .NET project (LookingForMentor) sits in `eval/sample_real/` (committed to the repo since PR #3) with its own golden set `eval/golden_real.jsonl`; baseline reports live in `eval/baselines/`. |
 | Dependencies | `requirements.txt` (pinned, now incl. `flask`, `mcp`) + `requirements-dev.txt`; `eval/requirements-eval.txt` points to the root file. Local `.venv/` gitignored. |
-| CI | GitHub Actions `ci.yml`: ruff + py_compile + pytest (+ `requests`, so the MCP shim tests run); heavy tests skip without the ML stack. Plus `eval.yml` (task 2.5): a **manual** (`workflow_dispatch`) eval gate — Qdrant service container, CPU torch, sample-corpus eval, fails on regression vs the saved baseline, uploads the report artifact. |
+| CI | GitHub Actions `ci.yml`: ruff + py_compile + pytest (+ `requests`, so the MCP shim tests run); heavy tests skip without the ML stack. Plus `eval.yml` (task 2.5): a **manual** (`workflow_dispatch`) eval gate — Qdrant service container, CPU torch, sample-corpus eval, fails on regression vs the saved baseline, uploads the report artifact. Plus `tests-full.yml` (task 3.6): a **manual** (`workflow_dispatch`) job — CPU torch + `requirements-dev` (incl. testcontainers) + Docker — that runs the WHOLE pytest suite, including the pipeline / MCP-protocol / real-Qdrant integration tests that skip on the fast push CI. |
 | Docs | `README.md` is current (service + MCP usage). The 2026-06-01 service design is **implemented** (status noted in the spec). |
 
 ## Key documents (read these first)
@@ -75,23 +75,55 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 1. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
    (embedding cache v2), 3.3 (safe index rebuild), 3.4 (incremental indexing),
-   and 3.5 (structured logging) are done; next up is 3.6 (pipeline test suite —
-   fusion/ranking unit tests with fake retrievers, an integration test against a
-   throwaway Qdrant container, an MCP protocol test) — see the plan table in
+   3.5 (structured logging), and 3.6 (pipeline test suite) are done; next up is
+   3.7 (lazy initialization — no model loading or cache reading at import time,
+   so tests no longer need the `model_setup` fake) — see the plan table in
    `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is complete
    (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 →
-   0.760, a report per change). Remaining Phase 3 work: the pipeline test suite,
-   lazy init (3.7), the security pass (3.8), and ask.py cleanup (3.9).
+   0.760, a report per change). Remaining Phase 3 work: lazy init (3.7), the
+   security pass (3.8), and ask.py cleanup (3.9).
 
 ## How to verify the project right now
 
 ```bash
-.venv/bin/python -m pytest tests/ -q   # 77 tests (heavy ones skip without the ML stack)
+.venv/bin/python -m pytest tests/ -q   # 97 tests with the full stack; heavy ones skip without it
 .venv/bin/ruff check scripts/ eval/ tests/
 bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
+
+# The pipeline (3.6) tests: query() with fake retrievers, the MCP protocol
+# round-trip, and a real-Qdrant integration test (needs Docker; testcontainers
+# spins its own qdrant/qdrant — skips cleanly without Docker):
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests/test_pipeline_query.py tests/test_mcp_protocol.py \
+    tests/test_integration_qdrant.py -v
 ```
 
 ## Status log
+
+- **2026-06-13 (task 3.6 — pipeline test suite, H5)** — Closed the three
+  pipeline-coverage gaps; **no production code changed**, tests + one dev dep
+  only. (1) `tests/test_pipeline_query.py` — the full `query()` orchestration
+  (variants → 3 retrievers → RRF → candidate cut → cosine re-rank → top_k JSON)
+  with **fake retrievers** returning real `NodeWithScore` objects and a fake
+  embed model/cache; asserts JSON shape, rank order, the candidate cut, and that
+  a bm25-only node survives fusion (proves all three lists fuse). (2)
+  `tests/test_mcp_protocol.py` — a real initialize / tools-list / tools-call
+  round-trip over the MCP SDK's in-memory transport
+  (`create_connected_server_and_client_session`), with `requests.post` faked;
+  also checks the service-down error propagates as a normal result. (3)
+  `tests/test_integration_qdrant.py` — **testcontainers** starts a throwaway
+  `qdrant/qdrant` container and runs the real `build_index` → `query` round-trip
+  using llama-index's `MockEmbedding` (no 400 MB model; BM25 carries the keyword
+  match); skips cleanly when Docker/testcontainers is absent. `testcontainers`
+  pinned in `requirements-dev.txt`. The pure ranking math was already covered by
+  `test_ranking.py` (left as is). **CI (per Oleh): keep push CI fast, run the
+  heavy suite manually** — `ci.yml` is unchanged (the three new tests skip there,
+  like the other ML-stack tests); new `tests-full.yml` (`workflow_dispatch`,
+  CPU torch + `requirements-dev` + Docker) runs the WHOLE suite incl. the
+  integration test. **97 tests green locally, ruff clean**, demo eval unchanged
+  at 1.000. Note: set Settings via the backing field `Settings._embed_model` —
+  assigning `Settings.embed_model` goes through a getter that resolves the
+  OpenAI default when unset.
 
 - **2026-06-13 (task 3.5 — structured logging, M11)** — Replaced bare `print`
   diagnostics with the stdlib `logging` module across `scripts/`. New

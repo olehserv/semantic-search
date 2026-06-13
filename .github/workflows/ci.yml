@@ -1,9 +1,10 @@
 # Fast verification gate (production-readiness plan, Phase 0.5).
 #
 # Deliberately does NOT install the ML stack (torch alone is ~2 GB): the
-# pipeline tests in tests/test_query_index.py skip themselves when llama-index
-# is absent, while the metric/eval tests and all static checks run everywhere.
-# A full-stack integration job is planned for Phase 3.6.
+# pipeline / Qdrant-integration / MCP-protocol tests skip themselves when
+# llama-index, testcontainers, or mcp are absent, while the metric/eval tests
+# and all static checks run everywhere. The full suite (those heavy tests
+# included) runs manually via tests-full.yml (Phase 3.6).
 name: CI
 
 on:

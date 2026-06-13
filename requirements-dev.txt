@@ -2,3 +2,6 @@
 -r requirements.txt
 pytest==9.0.3
 ruff==0.15.16
+# Spins a throwaway Qdrant container for the integration test (tests/
+# test_integration_qdrant.py). Only needed there; the test skips without it.
+testcontainers==4.14.2

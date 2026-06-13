@@ -1,0 +1,36 @@
+# Full-stack test suite (production-readiness plan, task 3.6).
+#
+# ci.yml stays fast (no ML stack), so the pipeline, MCP-protocol, and Qdrant
+# integration tests skip there. This job installs the full stack + testcontainers
+# and runs the WHOLE pytest suite, including the real-Qdrant integration test
+# (testcontainers starts a qdrant/qdrant container; the GitHub runner provides
+# the Docker daemon). workflow_dispatch only: CPU torch is heavy, so this is not
+# run on every push (same "heavy = manual" split as eval.yml).
+name: Tests (full stack, manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  full-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CPU torch, then the dev stack
+        # CPU wheel first so requirements.txt's torch==2.12.0 resolves to it and
+        # not the multi-GB CUDA build (same fix as the Dockerfile / eval.yml).
+        # requirements-dev.txt pulls in the runtime stack + pytest + ruff +
+        # testcontainers. No HuggingFace model is downloaded: conftest stubs
+        # model_setup and the integration test uses llama-index's MockEmbedding.
+        run: |
+          pip install --upgrade pip
+          pip install torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-dev.txt
+
+      - name: Run the full test suite
+        run: python -m pytest tests/ -q
