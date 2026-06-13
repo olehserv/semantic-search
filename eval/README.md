@@ -40,6 +40,30 @@ name, the demo will replace it. The name is env-driven
 (`QDRANT_COLLECTION`, default `demo`), so give real indexes their own
 collection.
 
+## Run it in CI (manual)
+
+There is a manual GitHub Actions job, `.github/workflows/eval.yml` (trigger:
+"Run workflow" / `workflow_dispatch`). It installs the full ML stack, starts a
+Qdrant service container, indexes the **sample corpus**, runs the eval, and
+**fails if any metric drops below** the saved sample baseline
+(`baselines/2026-06-13-sample-chunking.json`, which is 1.000 on everything). The
+report is uploaded as the `eval-report` artifact. It is manual on purpose: it
+downloads CPU torch and the embedding model, so it is too heavy for every push
+(the fast `ci.yml` stays ML-free).
+
+## Tuning knobs (env vars)
+
+| Env var | Default | Effect |
+|---------|---------|--------|
+| `QUERY_VARIANT_SUFFIXES` | `implementation` | Extra query variants; set domain hints here (see below). |
+| `RERANK_CANDIDATES` | `30` | How many top fused candidates go to the embedding re-rank. Query-time only — no reindex needed to change it. |
+
+`RERANK_CANDIDATES` was added to measure task 2.2 (does the post-fusion cut hurt
+recall?). On the real project the answer is **no**: the candidate pool per query
+is only ~16–23, always under 30, so every value from 30 up to "no cut" gives the
+same numbers (Recall@5 0.912 / MRR 0.716 / nDCG@5 0.760). The knob stays for
+future tuning if the retrievers are ever widened.
+
 ## The real-project baseline
 
 `golden_real.jsonl` holds 40 questions about the LookingForMentor project

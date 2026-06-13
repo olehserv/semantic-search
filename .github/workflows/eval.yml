@@ -1,0 +1,85 @@
+# Manual retrieval-quality gate (production-readiness plan, task 2.5).
+#
+# Unlike ci.yml (fast, no ML stack), this job installs the full stack and runs
+# the eval harness over the sample corpus against a real Qdrant. It is
+# workflow_dispatch only: it downloads CPU torch + the embedding model, so it is
+# too heavy for every push. The sample corpus is saturated (1.000 on every
+# metric), so any drop below the committed baseline is a real regression.
+name: Eval (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+
+    services:
+      qdrant:
+        image: qdrant/qdrant
+        ports:
+          - 6333:6333
+
+    env:
+      # Wait for the service container above instead of spawning Docker
+      # (scripts/qdrant.py honours this).
+      QDRANT_AUTOSTART: "0"
+      QDRANT_COLLECTION: demo
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Cache the HuggingFace model download (~400MB) between runs.
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-base-en-v1.5
+
+      - name: Install CPU torch, then the stack
+        # The CPU wheel first, so requirements.txt's torch==2.12.0 resolves to it
+        # and not the multi-GB CUDA build (same fix as the Dockerfile).
+        run: |
+          pip install --upgrade pip
+          pip install torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Build the sample index
+        # build_index.py uses PROJECT_PATH="./" and writes caches relative to CWD,
+        # so run it from inside the corpus (mirrors eval/run_demo.sh).
+        working-directory: eval/sample_corpus
+        run: PYTHONPATH="$GITHUB_WORKSPACE/scripts" python "$GITHUB_WORKSPACE/scripts/build_index.py" --force
+
+      - name: Run the eval
+        working-directory: eval/sample_corpus
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/scripts:$GITHUB_WORKSPACE/eval" \
+            python "$GITHUB_WORKSPACE/eval/run_eval.py" \
+            --golden "$GITHUB_WORKSPACE/eval/golden.jsonl" --k 5 \
+            --out "$GITHUB_WORKSPACE/report.json"
+
+      - name: Fail on regression vs the saved baseline
+        run: |
+          python - <<'PY'
+          import json, sys
+          base = json.load(open("eval/baselines/2026-06-13-sample-chunking.json"))["summary"]
+          got = json.load(open("report.json"))["summary"]
+          eps = 1e-6
+          worse = {k: (base[k], got.get(k)) for k in base
+                   if got.get(k, 0.0) < base[k] - eps}
+          for k, (b, g) in worse.items():
+              print(f"REGRESSION {k}: baseline {b:.3f} -> {g:.3f}")
+          print("eval summary:", got)
+          sys.exit(1 if worse else 0)
+          PY
+
+      - name: Upload the eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: report.json

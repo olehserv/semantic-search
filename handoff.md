@@ -4,10 +4,10 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 2.4 — code-aware chunking)
-**Repo state:** branch `phase-2-code-chunking`. Merged into `main` so far:
-PR #1 (Phase 0), PR #2 (Phase 1), PR #3 (baselines), PR #4 (RRF, task 2.1),
-PR #5 (query variants, task 2.3).
+**Last updated:** 2026-06-13 (task 2.2 check + task 2.5 — eval CI)
+**Repo state:** branch `phase-2-rerank-cut-and-eval-ci`. Merged into `main` so
+far: PR #1 (Phase 0), PR #2 (Phase 1), PR #3 (baselines), PR #4 (RRF, task 2.1),
+PR #5 (query variants, task 2.3), PR #6 (code-aware chunking, task 2.4).
 
 ---
 
@@ -29,7 +29,7 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 | Agent integration (`scripts/mcp_server.py`, `.mcp.json`) | **Real MCP server (Phase 1).** Official `mcp` SDK, FastMCP, stdio; one tool `search_codebase` that forwards to the service over HTTP with a timeout. Verified end-to-end with an MCP stdio client: initialize → tools/list → tools/call returns ranked results; service down → structured `{"error", "hint"}`. Legacy `mcp.json` deleted. |
 | Evaluation (`eval/`) | **Good.** Golden-set harness (Recall@k, MRR, nDCG@k), 34 passing unit tests (heavy tests skip without the ML stack), end-to-end demo. Demo checked 2026-06-11: 1.000 on all metrics for the 8 toy questions — the toy set is saturated. A real .NET project (LookingForMentor) sits in `eval/sample_real/` (committed to the repo since PR #3) with its own golden set `eval/golden_real.jsonl`; baseline reports live in `eval/baselines/`. |
 | Dependencies | `requirements.txt` (pinned, now incl. `flask`, `mcp`) + `requirements-dev.txt`; `eval/requirements-eval.txt` points to the root file. Local `.venv/` gitignored. |
-| CI | GitHub Actions: ruff + py_compile + pytest (+ `requests`, so the MCP shim tests run). Heavy tests skip without the ML stack. |
+| CI | GitHub Actions `ci.yml`: ruff + py_compile + pytest (+ `requests`, so the MCP shim tests run); heavy tests skip without the ML stack. Plus `eval.yml` (task 2.5): a **manual** (`workflow_dispatch`) eval gate — Qdrant service container, CPU torch, sample-corpus eval, fails on regression vs the saved baseline, uploads the report artifact. |
 | Docs | `README.md` is current (service + MCP usage). The 2026-06-01 service design is **implemented** (status noted in the spec). |
 
 ## Key documents (read these first)
@@ -71,15 +71,15 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge the code-aware chunking PR** (branch
-   `phase-2-code-chunking`): eval gate passed with the biggest win so far;
-   numbers in the status log.
-2. **Phase 2 remaining** (eval-gated, one change per PR): check whether the
-   post-re-rank cut still hurts (2.2 remainder), optional cross-encoder
-   re-ranker (2.6). Phase 2's "done when" (clearly above baseline, report
-   per change) is close — consider closing Phase 2 and starting Phase 3.
-   Each change must beat the recorded numbers in
-   `eval/baselines/`.
+1. **Review + merge the 2.2/2.5 PR** (branch `phase-2-rerank-cut-and-eval-ci`):
+   `RERANK_CANDIDATES` knob + finding that the cut is harmless, and the manual
+   eval CI workflow. No metric change (gate trivially passes).
+2. **Close Phase 2 and start Phase 3 (operations hardening).** Phase 2's
+   "done when" is met (Recall@5 0.600 → 0.912, nDCG@5 0.343 → 0.760, a report
+   per change). The only Phase 2 item left is the **optional** 2.6 cross-encoder
+   re-ranker — skip unless Phase 3 leaves time. Phase 3 work: safe/incremental
+   indexing (no destructive rebuild), env-only deploy, the full-stack
+   integration job hinted at in `ci.yml`.
 
 ## How to verify the project right now
 
@@ -91,6 +91,19 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 
 ## Status log
 
+- **2026-06-13 (task 2.2 check + task 2.5 — eval CI)** — Two Phase 2 leftovers
+  closed. **2.2:** the post-fusion candidate cut (`[:30]` in `query_index.py`) is
+  now `RERANK_CANDIDATES` (env var, default 30). Swept 30/50/100/9999 on the real
+  `lfm` index — **all identical** (Recall@5 0.912 / MRR 0.716 / nDCG@5 0.760),
+  because the unique candidate pool per query is only ~16–23, always under 30. So
+  the cut does not hurt recall (H2 fully closed); the knob stays for future
+  retriever widening. No new baseline (numbers unchanged). **2.5:** new manual
+  workflow `.github/workflows/eval.yml` (`workflow_dispatch`): Qdrant service
+  container + CPU torch, indexes the sample corpus, runs the eval, fails on any
+  drop below the saved sample baseline, uploads the report as an artifact. Sample
+  corpus reproduces 1.000; 55 tests green, ruff clean. `eval/README.md` documents
+  both. **Phase 2 is now complete** except the optional 2.6 (cross-encoder),
+  which is deliberately not done.
 - **2026-06-13 (task 2.4 — code-aware chunking)** — New `scripts/chunking.py`
   (tree-sitter + tree-sitter-c-sharp, pinned): C# files are cut on
   type/member borders, signatures stay with bodies, every chunk carries
