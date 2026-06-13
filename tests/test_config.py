@@ -28,6 +28,7 @@ CONFIG_ENV_VARS = (
     "CROSS_ENCODER_MODEL",
     "PORT",
     "QUERY_VARIANT_SUFFIXES",
+    "LOG_LEVEL",
 )
 
 
@@ -52,6 +53,7 @@ def test_defaults(clean_env):
     assert s.cross_encoder_model == ""
     assert s.service_port == 8000
     assert s.query_variant_suffixes == ("implementation",)
+    assert s.log_level == "INFO"
 
 
 def test_env_overrides(clean_env):
@@ -60,6 +62,7 @@ def test_env_overrides(clean_env):
     clean_env.setenv("PORT", "9000")
     clean_env.setenv("QDRANT_AUTOSTART", "0")
     clean_env.setenv("RERANK_CANDIDATES", "50")
+    clean_env.setenv("LOG_LEVEL", "DEBUG")
     s = Settings()
     assert s.collection_name == "lfm"
     assert s.qdrant_port == 7000
@@ -67,6 +70,7 @@ def test_env_overrides(clean_env):
     assert s.service_port == 9000
     assert s.qdrant_autostart is False
     assert s.rerank_candidates == 50
+    assert s.log_level == "DEBUG"
 
 
 def test_query_variant_suffixes_default(clean_env):

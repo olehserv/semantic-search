@@ -21,14 +21,17 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import TextNode
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import models
-from datetime import datetime
 import hashlib
+import logging
 
 # Imported for its side effect: configures Settings.embed_model, which
 # VectorStoreIndex uses to embed nodes during the build.
 import model_setup  # noqa: F401
 import qdrant
 from chunking import chunk_csharp
+from logging_setup import setup_logging
+
+logger = logging.getLogger(__name__)
 
 PROJECT_PATH = "./"
 
@@ -98,8 +101,8 @@ def make_nodes(docs):
             ))
     code_aware = len(nodes)
     nodes.extend(splitter.get_nodes_from_documents(fallback_docs))
-    print(f"[DEBUG] code-aware chunks: {code_aware}, "
-          f"fallback docs: {len(fallback_docs)}")
+    logger.debug("code-aware chunks: %d, fallback docs: %d",
+                 code_aware, len(fallback_docs))
     return nodes
 
 
@@ -114,30 +117,31 @@ def build_index(force=False):
     client = qdrant.get_qdrant_client()
     if client is None:
         raise RuntimeError("Could not connect to Qdrant")
-    print("Collections:", client.get_collections())
+    logger.debug("Collections: %s", client.get_collections())
 
     # resolve_active_collection follows the alias, so the prompt still fires
     # once COLLECTION_NAME is an alias (aliases are not listed as collections).
     if qdrant.resolve_active_collection(client, qdrant.COLLECTION_NAME) and not force:
-        print(f"Replace existing Qdrant index '{qdrant.COLLECTION_NAME}'? (y/n)")
-        if input().lower() != "y":
-            print(f"[DEBUG] [{datetime.now()}] Terminated.")
+        # A real prompt, not a log line: ask on stdout and read the answer.
+        answer = input(f"Replace existing Qdrant index '{qdrant.COLLECTION_NAME}'? (y/n) ")
+        if answer.lower() != "y":
+            logger.info("Terminated.")
             return
 
-    print(f"[DEBUG] [{datetime.now()}] Loading documents...")
+    logger.info("Loading documents...")
     docs = load_documents()
-    print(f"[DEBUG] [{datetime.now()}] Loaded {len(docs)} documents")
+    logger.info("Loaded %d documents", len(docs))
 
     nodes = make_nodes(docs)
 
-    print(f"[DEBUG] [{datetime.now()}] Total nodes: {len(nodes)}")
+    logger.info("Total nodes: %d", len(nodes))
 
     # Build into a fresh, timestamped collection — NOT the live one. Nothing is
     # deleted until this succeeds and the alias is swapped below.
     new_collection = qdrant.new_collection_name(qdrant.COLLECTION_NAME)
     vector_store = QdrantVectorStore(client=client, collection_name=new_collection)
 
-    print(f"[DEBUG] [{datetime.now()}] Building index in '{new_collection}'...")
+    logger.info("Building index in '%s'...", new_collection)
 
     # Wire the vector store through a StorageContext so the index is actually
     # persisted to Qdrant. Passing vector_store= to the constructor alone builds
@@ -152,15 +156,15 @@ def build_index(force=False):
         try:
             client.delete_collection(new_collection)
         except Exception as e:
-            print(f"[DEBUG] could not clean up '{new_collection}' ({e})")
+            logger.warning("could not clean up '%s' (%s)", new_collection, e)
         raise
 
     # Success: atomically point the alias at the new collection and delete the
     # old index (and any crashed-build leftovers).
     qdrant.promote_collection(client, qdrant.COLLECTION_NAME, new_collection)
 
-    print(f"[DEBUG] [{datetime.now()}] ✅ Index built and '{qdrant.COLLECTION_NAME}' "
-          f"now points to '{new_collection}'")
+    logger.info("✅ Index built and '%s' now points to '%s'",
+                qdrant.COLLECTION_NAME, new_collection)
 
 
 # --- Incremental indexing (plan 3.4, finding M6) -----------------------------
@@ -247,10 +251,10 @@ def build_index_incremental():
 
     live = qdrant.resolve_active_collection(client, qdrant.COLLECTION_NAME)
     if live is None:
-        print("[DEBUG] No existing index — doing a full build instead.")
+        logger.info("No existing index — doing a full build instead.")
         return build_index(force=True)
 
-    print(f"[DEBUG] [{datetime.now()}] Incremental update of '{live}'")
+    logger.info("Incremental update of '%s'", live)
 
     # Old state: what the index already holds. New state: what is on disk now.
     # The new hashes use the same function make_nodes stamps with, so a file's
@@ -262,11 +266,11 @@ def build_index_incremental():
     changed, new_files, deleted = diff_files(old, new)
     to_reindex = changed | new_files
 
-    print(f"[DEBUG] changed: {len(changed)}, new: {len(new_files)}, "
-          f"deleted: {len(deleted)}")
+    logger.info("changed: %d, new: %d, deleted: %d",
+                len(changed), len(new_files), len(deleted))
 
     if not to_reindex and not deleted:
-        print("[DEBUG] Nothing changed — index left untouched.")
+        logger.info("Nothing changed — index left untouched.")
         return
 
     # Drop points of edited files (their fresh chunks are re-added below) and of
@@ -275,13 +279,13 @@ def build_index_incremental():
 
     if to_reindex:
         nodes = make_nodes([d for d in docs if d.metadata["file_path"] in to_reindex])
-        print(f"[DEBUG] [{datetime.now()}] Re-embedding {len(nodes)} chunks "
-              f"from {len(to_reindex)} files...")
+        logger.info("Re-embedding %d chunks from %d files...",
+                    len(nodes), len(to_reindex))
         vector_store = QdrantVectorStore(client=client, collection_name=live)
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
         VectorStoreIndex(nodes, storage_context=storage_context, show_progress=True)
 
-    print(f"[DEBUG] [{datetime.now()}] ✅ Incremental update done on '{live}'")
+    logger.info("✅ Incremental update done on '%s'", live)
 
 
 if __name__ == "__main__":
@@ -298,6 +302,7 @@ if __name__ == "__main__":
              "and drop deleted ones (no full rebuild, no alias swap)",
     )
     args = parser.parse_args()
+    setup_logging()
     if args.incremental:
         build_index_incremental()
     else:

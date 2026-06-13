@@ -4,9 +4,9 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 3.4 — incremental indexing)
-**Repo state:** branch `phase-3-incremental-indexing`. Merged into `main` so far:
-PRs #1–#11 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.3).
+**Last updated:** 2026-06-13 (task 3.5 — structured logging)
+**Repo state:** branch `phase-3-structured-logging`. Merged into `main` so far:
+PRs #1–#12 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.4).
 
 ---
 
@@ -73,17 +73,15 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Next actions (in order)
 
-1. **Review + merge the 2.6 PR** (branch `spike/cross-encoder-rerank`): optional
-   cross-encoder re-ranker, off by default; `blend_cross_encoder()` + tests, new
-   baseline, docs. Default behavior unchanged (gate: 0.912/0.716/0.760 reproduced).
-2. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
-   (embedding cache v2), 3.3 (safe index rebuild), and 3.4 (incremental
-   indexing) are done; next up is 3.5 (structured logging — replace `print`
-   with the `logging` module) — see the plan table in
+1. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
+   (embedding cache v2), 3.3 (safe index rebuild), 3.4 (incremental indexing),
+   and 3.5 (structured logging) are done; next up is 3.6 (pipeline test suite —
+   fusion/ranking unit tests with fake retrievers, an integration test against a
+   throwaway Qdrant container, an MCP protocol test) — see the plan table in
    `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is complete
    (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 →
-   0.760, a report per change). Remaining Phase 3 work: structured logging, the
-   pipeline test suite, lazy init, the security pass, and ask.py cleanup.
+   0.760, a report per change). Remaining Phase 3 work: the pipeline test suite,
+   lazy init (3.7), the security pass (3.8), and ask.py cleanup (3.9).
 
 ## How to verify the project right now
 
@@ -94,6 +92,32 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
+
+- **2026-06-13 (task 3.5 — structured logging, M11)** — Replaced bare `print`
+  diagnostics with the stdlib `logging` module across `scripts/`. New
+  `scripts/logging_setup.py` with `setup_logging()` — one `logging.basicConfig`
+  to **stderr**, level from a new `LOG_LEVEL` config field (default INFO;
+  `LOG_LEVEL=DEBUG` shows the per-step traces), structured format
+  (`time level name: message`). Entry points (`build_index`, `query_index`,
+  `ask`, `qdrant` `__main__`s + `service.main()`) call it once; every module
+  uses `logger = logging.getLogger(__name__)` and lazy `%`-args. Levels: the old
+  `[DEBUG] [datetime] …` traces → `logger.debug` (the embedded timestamps are
+  gone — the format adds the time), milestones/status → `logger.info`,
+  recoverable problems ("cache failed", "could not clean up") → `logger.warning`.
+  **Removed the M11 "replaced built-in":** `query_index.py` no longer does
+  `print = functools.partial(print, file=sys.stderr)`; its stdout-only-JSON
+  contract now holds simply because logging defaults to stderr (verified: a CLI
+  query emits exactly one JSON line on stdout, all logs on stderr). `ask.py` lost
+  its `DEBUG = True` flag (its debug line is now `logger.debug` on stderr, fixing
+  the M3/M4 stdout mixing); `print(ask(q))` stays (the answer is real output).
+  `setup_logging()` also dials `httpx`/`httpcore` down to WARNING unless
+  `LOG_LEVEL=DEBUG`, so the Qdrant client's per-request INFO logs don't bury our
+  own status. **Left as `print`:** the build `(y/n)` prompt (moved into
+  `input(...)`) and `eval/run_eval.py`'s metrics table (report data, not a log).
+  `mcp_server.py` was already print-free. New `tests/test_logging_setup.py` (3)
+  + `LOG_LEVEL` cases in `test_config.py`; **89 tests green, ruff clean**, demo
+  eval still 1.000/1.000/1.000 (no logic change). The other M11 polish items
+  (typos, a Ukrainian comment) were already fixed in earlier refactors.
 
 - **2026-06-13 (task 3.4 — incremental indexing, M6)** — New `--incremental`
   mode in `scripts/build_index.py`. Each file now carries a `file_hash`
