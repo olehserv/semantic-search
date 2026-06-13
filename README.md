@@ -127,12 +127,15 @@ read from environment variables — one typed place instead of scattered
 | Qdrant port | `QDRANT_PORT` | `6333` |
 | Qdrant collection | `QDRANT_COLLECTION` | `demo` |
 | Qdrant autostart (Docker) | `QDRANT_AUTOSTART` | `1` (on) |
+| Qdrant API key | `QDRANT_API_KEY` | `""` (off; set it to talk to a secured/remote Qdrant) |
+| Qdrant HTTPS | `QDRANT_HTTPS` | `0` (off; set `1` for a TLS/remote Qdrant, e.g. Qdrant Cloud) |
 | Embedding model | `EMBED_MODEL` | `BAAI/bge-base-en-v1.5` |
 | LLM model (ask.py) | `LLM_MODEL` | `llama3` |
-| Embedding cache path | `EMB_CACHE_PATH` | `./.claude/cache/embeddings.pkl` |
+| Embedding cache path | `EMB_CACHE_PATH` | `./.claude/cache/embeddings.db` |
 | Re-rank candidate cut | `RERANK_CANDIDATES` | `30` |
 | Cross-encoder re-ranker | `CROSS_ENCODER_MODEL` | `""` (off) |
 | Service port | `PORT` | `8000` |
+| Max `/search` body size | `MAX_CONTENT_LENGTH` | `65536` (bytes; bigger requests get HTTP 413) |
 | Query variants | `QUERY_VARIANT_SUFFIXES` | `implementation` (comma-separated; add domain terms, e.g. `implementation,.NET core backend`) |
 | Log level | `LOG_LEVEL` | `INFO` (status only; set `LOG_LEVEL=DEBUG` to see the per-step traces). All logs go to stderr. |
 

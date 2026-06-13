@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 QDRANT_HOST = settings.qdrant_host
 QDRANT_PORT = settings.qdrant_port
 
+# Auth + transport (plan 3.8). Empty key = unauthenticated (local default).
+QDRANT_API_KEY = settings.qdrant_api_key
+QDRANT_HTTPS = settings.qdrant_https
+
 COLLECTION_NAME = settings.collection_name
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +37,13 @@ def get_qdrant_client():
     creating the client object alone does not open a connection.
     """
     try:
-        client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+        client = QdrantClient(
+            host=QDRANT_HOST,
+            port=QDRANT_PORT,
+            # None = unauthenticated; a non-empty key secures a remote Qdrant.
+            api_key=QDRANT_API_KEY or None,
+            https=QDRANT_HTTPS,
+        )
         client.get_collections()
         return client
     except Exception:

@@ -29,6 +29,9 @@ CONFIG_ENV_VARS = (
     "PORT",
     "QUERY_VARIANT_SUFFIXES",
     "LOG_LEVEL",
+    "QDRANT_API_KEY",
+    "QDRANT_HTTPS",
+    "MAX_CONTENT_LENGTH",
 )
 
 
@@ -54,6 +57,9 @@ def test_defaults(clean_env):
     assert s.service_port == 8000
     assert s.query_variant_suffixes == ("implementation",)
     assert s.log_level == "INFO"
+    assert s.qdrant_api_key == ""
+    assert s.qdrant_https is False
+    assert s.max_content_length == 65536
 
 
 def test_env_overrides(clean_env):
@@ -63,6 +69,9 @@ def test_env_overrides(clean_env):
     clean_env.setenv("QDRANT_AUTOSTART", "0")
     clean_env.setenv("RERANK_CANDIDATES", "50")
     clean_env.setenv("LOG_LEVEL", "DEBUG")
+    clean_env.setenv("QDRANT_API_KEY", "secret")
+    clean_env.setenv("QDRANT_HTTPS", "1")
+    clean_env.setenv("MAX_CONTENT_LENGTH", "1024")
     s = Settings()
     assert s.collection_name == "lfm"
     assert s.qdrant_port == 7000
@@ -71,6 +80,9 @@ def test_env_overrides(clean_env):
     assert s.qdrant_autostart is False
     assert s.rerank_candidates == 50
     assert s.log_level == "DEBUG"
+    assert s.qdrant_api_key == "secret"
+    assert s.qdrant_https is True
+    assert s.max_content_length == 1024
 
 
 def test_query_variant_suffixes_default(clean_env):
