@@ -4,15 +4,17 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.core import Settings
 
-# Local LLM used by ask.py. Change this to swap models (e.g. a code-tuned one).
-LLM_MODEL = "llama3"
+from config import settings
+
+# Local LLM used by ask.py. Swap it via the LLM_MODEL env var (plan 3.1).
+LLM_MODEL = settings.llm_model
 
 # Use the GPU when one is available, otherwise fall back to CPU. (Previously
 # hardcoded to "cuda", which crashed on CPU-only machines — e.g. the eval demo.)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 Settings.embed_model = HuggingFaceEmbedding(
-    model_name="BAAI/bge-base-en-v1.5",
+    model_name=settings.embed_model,
     device=device
 )
 

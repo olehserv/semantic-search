@@ -4,10 +4,10 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 2.2 check + task 2.5 — eval CI)
-**Repo state:** branch `phase-2-rerank-cut-and-eval-ci`. Merged into `main` so
-far: PR #1 (Phase 0), PR #2 (Phase 1), PR #3 (baselines), PR #4 (RRF, task 2.1),
-PR #5 (query variants, task 2.3), PR #6 (code-aware chunking, task 2.4).
+**Last updated:** 2026-06-13 (task 3.1 — config layer)
+**Repo state:** branch `phase-3-config-layer`. Merged into `main` so far:
+PRs #1–#8 (Phase 0 through Phase 2, ending with task 2.6 — optional
+cross-encoder re-ranker).
 
 ---
 
@@ -54,11 +54,11 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 ## Known risks
 
-- `eval/run_demo.sh` rebuilds the Qdrant collection named in
-  `scripts/qdrant.py` — **it will delete a real index** that uses the same
-  name. The name is now env-driven (`QDRANT_COLLECTION`, default `demo`), so
-  keep real indexes in their own collection (the LookingForMentor index uses
-  `lfm`).
+- ~~`eval/run_demo.sh` can delete a real index~~ **Closed (task 3.1, H7).**
+  `run_demo.sh` now `export`s a dedicated `QDRANT_COLLECTION=demo-eval` before
+  building, overriding any value in the caller's environment, so the demo can
+  only ever (re)build its own throwaway collection — never a real index such as
+  `lfm`.
 - If you change the embedding model without deleting
   `./.claude/cache/embeddings.pkl`, old and new vectors get mixed silently
   (finding H3).
@@ -74,9 +74,12 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 1. **Review + merge the 2.6 PR** (branch `spike/cross-encoder-rerank`): optional
    cross-encoder re-ranker, off by default; `blend_cross_encoder()` + tests, new
    baseline, docs. Default behavior unchanged (gate: 0.912/0.716/0.760 reproduced).
-2. **Start Phase 3 (operations hardening).** Phase 2 is complete (all of 2.1–2.6
-   done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 → 0.760, a report
-   per change). Phase 3 work: safe/incremental indexing (no destructive rebuild),
+2. **Continue Phase 3 (operations hardening).** Task 3.1 (config layer) is done;
+   next up is 3.2 (embedding cache v2) — see the plan table in
+   `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is complete
+   (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 →
+   0.760, a report per change). Remaining Phase 3 work: safe/incremental indexing
+   (no destructive rebuild),
    env-only deploy, the full-stack integration job hinted at in `ci.yml`.
 
 ## How to verify the project right now
@@ -88,6 +91,30 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
+
+- **2026-06-13 (task 3.1 — config layer, H7)** — New `scripts/config.py`: a
+  pydantic-settings `Settings` class + module singleton `settings` that reads all
+  deployment config from env vars in one typed place (Qdrant host/port/collection,
+  autostart, embedding + LLM model, cache path, rerank cut, cross-encoder model,
+  service port, query-variant suffixes). Env var names kept bare (no prefix) so
+  docker-compose and docs are unchanged; three fields use an explicit
+  `validation_alias` (`QDRANT_COLLECTION`, `QUERY_VARIANT_SUFFIXES`, `PORT`).
+  `QUERY_VARIANT_SUFFIXES` stays a `str` + a `query_variant_suffixes` property
+  (pydantic would otherwise JSON-parse a list field and reject
+  `implementation,.NET core backend`); the property reproduces the old inline
+  split exactly. `qdrant.py`, `model_setup.py`, `query_index.py`, `service.py`
+  now source their values from `settings` but keep their existing public names
+  (e.g. `qdrant.COLLECTION_NAME`), so callers are untouched — minimal diff. Pure
+  tuning constants (`RRF_K`, `CROSS_ENCODER_WEIGHT`, `MAX_CONTEXT_CHARS` — the
+  last owned by task 3.9) deliberately left in place. `config.py` is import-cheap
+  (only pydantic-settings, no torch/llama-index), so the conftest `model_setup`
+  stub is unaffected. **H7 closed:** `eval/run_demo.sh` now `export`s
+  `QDRANT_COLLECTION=demo-eval`, so the demo can never delete a real index.
+  `pydantic`/`pydantic-settings` pinned in `requirements.txt`. New
+  `tests/test_config.py` (defaults, env overrides, comma-split edge case); 64
+  tests green, ruff clean. `QDRANT_AUTOSTART` is now a pydantic bool (`0`/`1` →
+  `False`/`True`, same as the old `!= "1"` check). Eval numbers unchanged
+  (consolidation only).
 
 - **2026-06-13 (task 2.6 — optional cross-encoder re-ranker)** — Investigated and
   productionized **off by default**. `CROSS_ENCODER_MODEL` env var (empty = off):
