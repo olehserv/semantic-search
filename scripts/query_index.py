@@ -36,6 +36,11 @@ QUERY_VARIANT_SUFFIXES = tuple(
     if s.strip()
 )
 
+# How many of the top fused candidates go to the embedding re-rank. The cut is a
+# query-time knob (no reindex needed to change it), kept as an env var so its
+# effect on recall can be measured by the eval (production-readiness plan 2.2).
+RERANK_CANDIDATES = int(os.getenv("RERANK_CANDIDATES", "30"))
+
 _embedding_cache = {}
 
 print(f"[DEBUG] [{datetime.now()}] BEGIN query_index")
@@ -211,11 +216,12 @@ def query(q, alpha=0.7, top_k=8):
     # RRF fuses by rank only, so cosine and BM25 scales cannot clash (H1).
     fused = rrf_scores(ranked_lists, weights=list_weights)
 
-    # The candidate cut now happens AFTER fusion: the 30 best fused nodes go
-    # to the embedding re-rank, instead of the first 30 in arrival order.
+    # The candidate cut now happens AFTER fusion: the best fused nodes go to the
+    # embedding re-rank, instead of the first ones in arrival order. The cut size
+    # is RERANK_CANDIDATES (default 30).
     ordered_nodes = sorted(
         nodes_by_id.values(), key=lambda n: fused[n.node_id], reverse=True
-    )[:30]
+    )[:RERANK_CANDIDATES]
 
     print(f"Candidates: {len(ordered_nodes)}")
     print(f"[DEBUG] [{datetime.now()}] query(): gather nodes END")
