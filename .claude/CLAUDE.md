@@ -1,6 +1,6 @@
 # Claude Instructions
 
-№# Rules
+## Rules
 
 - Think before coding
 - Ask when unsure

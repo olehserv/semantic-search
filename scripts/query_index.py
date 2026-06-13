@@ -1,3 +1,17 @@
+"""The hybrid search engine: turn a question into ranked code chunks.
+
+This is the heart of the search. For one question it:
+  1. makes a few query variants (the original + domain hints),
+  2. runs three retrievers on each variant (see build_query_engine),
+  3. fuses all the ranked lists into one with RRF (ranking.py),
+  4. takes the best candidates and re-ranks them (cosine, or an optional
+     cross-encoder), then
+  5. returns the top chunks as JSON.
+
+Output contract: this module writes ONLY the final JSON to stdout. Every debug
+line goes to stderr (see the `print` redirect below), because mcp_server.py and
+the CLI read this script's stdout as JSON — debug text there would corrupt it.
+"""
 from llama_index.core import Settings
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.schema import TextNode
@@ -69,6 +83,11 @@ _embedding_cache = {}
 print(f"[DEBUG] [{datetime.now()}] BEGIN query_index")
 
 def cache_warmup():
+    """Load the saved embedding cache from disk into memory, if it exists.
+
+    The cache maps chunk text -> its vector, so we do not recompute embeddings
+    we have seen before (embedding is the slow part). Missing file = empty cache.
+    """
     global _embedding_cache
     if os.path.exists(EMB_CACHE_PATH):
         with open(EMB_CACHE_PATH, "rb") as f:
@@ -108,6 +127,12 @@ def load_all_nodes(client, collection_name):
 
 
 def get_bm25_retriever(index):
+    """Build the BM25 keyword retriever from the nodes stored in Qdrant.
+
+    BM25 is the classic keyword search (exact word matches). LlamaIndex's BM25
+    lives in memory, so we load every chunk back out of Qdrant and feed them in.
+    This runs once per process (the service stays warm), so the cost is paid once.
+    """
     # BM25 is in-memory only: rebuild it from the nodes stored in Qdrant each
     # time the engine is built (once per long-lived process).
     client = qdrant.get_qdrant_client()
@@ -124,6 +149,7 @@ def get_bm25_retriever(index):
 
 
 def load_index():
+    """Connect to Qdrant and wrap the collection as a LlamaIndex vector index."""
     qdrant.ensure_qdrant()
     client = qdrant.get_qdrant_client()
     if client is None:
@@ -136,6 +162,18 @@ def load_index():
     return VectorStoreIndex.from_vector_store(vector_store)
 
 def build_query_engine():
+    """Build the three retrievers we search with. Slow, so done once per process.
+
+    WHY three retrievers, not one — each is good at something different, and
+    fusing them (step 3 in query()) beats any one alone:
+      - narrow vector (top-6): semantic search, precise. The most likely chunks.
+      - BM25: keyword search. Code search needs exact word/identifier matches
+        (a class name, a method name) that meaning-based vectors can miss.
+      - wide vector (top-12): semantic search, recall safety net. Casts a wider
+        net so a correct chunk that just missed the top-6 still gets a chance.
+
+    The `#6` / `#12` notes are just the tuned top_k values.
+    """
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): START")
 
     # 1. load index
@@ -145,7 +183,7 @@ def build_query_engine():
     print(f"[DEBUG] len(index.docstore.docs) = {len(index.docstore.docs)}")
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): load index END. Duration {time() - start:.2f}")
 
-    # 2. semantic search
+    # 2. semantic search, narrow: the top few chunks by meaning.
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever START")
     vector_retriever = VectorIndexRetriever(
         index=index,
@@ -153,15 +191,15 @@ def build_query_engine():
     )
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever END")
 
-    # 3. keyword search
+    # 3. keyword search: exact word/identifier matches (BM25).
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): BM25Retriever START")
     bm25_retriever = get_bm25_retriever(index)
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): BM25Retriever END")
 
-    # 4. wider search
+    # 4. semantic search, wide: more chunks by meaning, as a recall safety net.
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever START")
     vector_wide = VectorIndexRetriever(
-        index=index, 
+        index=index,
         similarity_top_k=12 #12
     )
     print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever END")
@@ -194,6 +232,7 @@ def hybrid_retrieve(query, vector, bm25, vector_wide):
 _engine = None
 
 def get_engine():
+    """Return the warm engine, building it on the first call (then reusing it)."""
     global _engine
     if _engine is None:
         _engine = build_query_engine()
@@ -201,6 +240,11 @@ def get_engine():
 
 
 def get_embedding(text, embed_model):
+    """Return the vector for `text`, using the cache and saving new ones to disk.
+
+    Cache hit -> instant. Cache miss -> compute the vector, then persist the whole
+    cache so the next run starts warm.
+    """
     if text not in _embedding_cache:
         _embedding_cache[text] = embed_model.get_text_embedding(text)
 
@@ -215,14 +259,23 @@ def get_embedding(text, embed_model):
     return _embedding_cache[text]
 
 def query(q, alpha=0.7, top_k=8):
+    """Search the codebase for `q` and return the top_k chunks as a dict.
+
+    Steps: expand the query into variants -> run the three retrievers on each
+    -> fuse all the ranked lists with RRF -> keep the best candidates -> re-rank
+    them (cosine blend, or an optional cross-encoder) -> return the top_k.
+
+    Returns {"answer": <summary>, "sources": [file names], "context": [chunks]}.
+    """
     print(f"[DEBUG] [{datetime.now()}] query(): get_engine")
 
     vector, bm25, vector_wide = get_engine()
 
     queries = expand_query(q, QUERY_VARIANT_SUFFIXES)
 
-    # One ranked id-list per (variant, retriever) pair; the original query's
-    # lists weigh more, like the old frequency boost did.
+    # One ranked id-list per (variant, retriever) pair. The user's original
+    # words weigh more than the added variants: variants help recall, but the
+    # real question should still decide the ranking (weight 1.5 vs 1.0).
     ranked_lists = []
     list_weights = []
     nodes_by_id = {}
@@ -250,6 +303,11 @@ def query(q, alpha=0.7, top_k=8):
     print(f"[DEBUG] [{datetime.now()}] query(): gather nodes END")
 
     print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks START")
+    # Re-rank step: take a closer look at the candidates and give a final score.
+    # Two ways to do it — see docs/CONCEPTS.md (re-ranking):
+    #   - cross-encoder (optional): slower but more accurate, reads the query and
+    #     the chunk together. On only when CROSS_ENCODER_MODEL is set.
+    #   - cosine blend (default): fast, compares the query vector and chunk vector.
     if CROSS_ENCODER_MODEL:
         # Cross-encoder: score each (query, chunk) pair jointly. No cached chunk
         # embeddings — the score depends on the query, so we pay one forward pass

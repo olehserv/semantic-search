@@ -18,11 +18,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # pydantic-settings reads each field below from an environment variable of
+    # the same name. `case_sensitive=False` means QDRANT_HOST and qdrant_host
+    # both match; `extra="ignore"` means unrelated env vars are not an error.
     model_config = SettingsConfigDict(extra="ignore", case_sensitive=False)
 
     # --- Qdrant connection + collection ---
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
+    # `validation_alias` binds this field to a DIFFERENTLY named env var: the
+    # field is `collection_name`, but it is read from QDRANT_COLLECTION (the
+    # name docker-compose and the docs already use).
     collection_name: str = Field("demo", validation_alias="QDRANT_COLLECTION")
     qdrant_autostart: bool = True
 

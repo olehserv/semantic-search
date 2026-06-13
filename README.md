@@ -6,6 +6,10 @@ A search tool for .NET codebases. It combines two kinds of search:
 about the code in natural language. The vectors are stored in a
 [Qdrant](https://qdrant.tech/) database.
 
+New to the AI ideas here (embeddings, cosine similarity, BM25, RRF, re-ranking)?
+Read [`docs/CONCEPTS.md`](docs/CONCEPTS.md) first — it explains each one in plain
+English with analogies.
+
 ## How it works
 
 1. **Index** (`build_index.py`) — reads `.cs`/`.csproj`/`.sln`/`.slnx` files,

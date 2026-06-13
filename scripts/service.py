@@ -23,11 +23,17 @@ app = Flask(__name__)
 
 @app.route("/health")
 def health():
+    """Liveness check: returns 200 so callers know the service is up."""
     return jsonify({"status": "ok"})
 
 
 @app.route("/search", methods=["POST"])
 def search():
+    """Run one search. Body: {"query": "..."}. Returns the query() JSON.
+
+    Missing query -> 400. Any internal error -> 500 with the message, so the
+    caller (the MCP shim) gets a clear reason instead of a dropped connection.
+    """
     data = request.get_json(silent=True) or {}
     q = data.get("query")
     if not q:

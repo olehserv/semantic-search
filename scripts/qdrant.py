@@ -1,3 +1,9 @@
+"""Connect to Qdrant, and start its Docker container when it is not running.
+
+Qdrant is the vector database: it stores the chunk vectors and finds the
+nearest ones at search time. The rest of the code just calls `ensure_qdrant()`
+to make sure it is up, then `get_qdrant_client()` to talk to it.
+"""
 from qdrant_client import QdrantClient
 import subprocess
 import time
@@ -17,6 +23,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPOSE_FILE = os.path.join(BASE_DIR, "docker-compose.yml")
 
 def get_qdrant_client():
+    """Return a connected Qdrant client, or None if Qdrant is not reachable.
+
+    It calls get_collections() as a quick "are you really there?" check, because
+    creating the client object alone does not open a connection.
+    """
     try:
         client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
         client.get_collections()
@@ -27,6 +38,16 @@ def get_qdrant_client():
 
 
 def ensure_qdrant():
+    """Make sure Qdrant is running before we use it. There are two cases.
+
+    1. Already up -> nothing to do.
+    2. QDRANT_AUTOSTART is off (we are inside a container): we cannot run
+       docker here, so just wait for the Qdrant service to become reachable.
+    3. Otherwise (local dev): start the Qdrant container with docker-compose,
+       then wait for it to answer.
+
+    Raises RuntimeError if Qdrant never comes up.
+    """
     if get_qdrant_client() is not None:
         return
 

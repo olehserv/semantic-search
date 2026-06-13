@@ -1,3 +1,15 @@
+"""Build (or rebuild) the search index in Qdrant.
+
+The one-time indexing step. It reads the code files, cuts them into chunks
+(code-aware for C#, sentence windows for the rest), turns each chunk into a
+vector with the embedding model, and stores the vectors in Qdrant. Run it once
+before searching, and again whenever the code changes.
+
+Run from the root of the project you want to search:
+
+    python scripts/build_index.py            # asks before replacing an index
+    python scripts/build_index.py --force     # replaces without asking
+"""
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import TextNode
@@ -14,6 +26,11 @@ PROJECT_PATH = "./"
 
 
 def load_documents():
+    """Read the code files we want to index from the current project folder.
+
+    Only .cs/.csproj/.sln/.slnx files are read. Build output and tool folders
+    (bin, obj, node_modules, .git, ...) are skipped — they are noise, not code.
+    """
     return SimpleDirectoryReader(
         PROJECT_PATH,
         recursive=True,
@@ -64,6 +81,12 @@ def make_nodes(docs):
 
 
 def build_index(force=False):
+    """Read the project, chunk + embed it, and store the vectors in Qdrant.
+
+    If the collection already exists and force is False, asks before replacing
+    it (so you do not wipe an index by accident). force=True (the --force flag)
+    replaces it without asking — handy for scripts and CI.
+    """
     qdrant.ensure_qdrant()
     client = qdrant.get_qdrant_client()
     if client is None:

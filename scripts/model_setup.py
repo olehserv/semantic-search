@@ -1,3 +1,16 @@
+"""Set up the embedding model and the LLM, once, for the whole pipeline.
+
+WHAT: this module configures LlamaIndex's global `Settings` object:
+`Settings.embed_model` (turns text into vectors) and `Settings.llm` (writes
+answers in ask.py).
+
+WHY it works by being imported: importing a module runs its code top to bottom.
+The lines below run on import and change the global `Settings`. So other modules
+do not call a setup function — they simply `import model_setup` and the models
+are ready. (See build_index.py and query_index.py, which import it for exactly
+this side effect.) Doing it in one place means the model choice lives in one
+place.
+"""
 import torch
 
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding

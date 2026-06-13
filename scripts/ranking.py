@@ -53,6 +53,10 @@ def rrf_scores(ranked_lists, weights=None, k=RRF_K):
         for rank, node_id in enumerate(ids, start=1):
             fused[node_id] = fused.get(node_id, 0.0) + weight / (k + rank)
 
+    # Normalize so the scores are easy to read and to blend later. The best a
+    # node can do is sit at rank 1 in every list, which adds up to `best_possible`
+    # (each list contributes weight / (k + 1)). Dividing by it makes that perfect
+    # case score exactly 1.0, and everything else falls between 0 and 1.
     best_possible = sum(w / (k + 1) for w in weights)
     return {nid: s / best_possible for nid, s in fused.items()}
 
@@ -66,6 +70,9 @@ def blend_cross_encoder(nodes, ce_logits, fused_scores, weight=0.85):
     than the bi-encoder cosine — but used alone it drops the BM25/keyword signal,
     so it is blended with RRF here (same shape as score_candidates, cross-encoder
     in place of cosine). sigmoid maps the unbounded logit to 0-1 to match RRF.
+
+    weight defaults to 0.85: the cross-encoder is the stronger signal here, so it
+    leads the blend more than cosine does in score_candidates. Tuned on the eval.
 
     nodes      : candidate nodes exposing .node_id, aligned with ce_logits
     ce_logits  : raw cross-encoder scores, one per node
@@ -83,6 +90,10 @@ def score_candidates(nodes, fused_scores, query_emb, text_embeddings,
     """Blend the RRF fusion with an embedding re-rank into one final score.
 
     final = alpha * cosine(query, chunk) + (1 - alpha) * fused RRF score
+
+    alpha defaults to 0.7: the cosine similarity (meaning match) usually picks
+    the best chunk better than rank fusion alone, so it leads the blend, while
+    the RRF score still has a say. The value was tuned on the eval set.
 
     nodes           : candidate nodes exposing .node_id
     fused_scores    : node_id -> RRF score from rrf_scores()

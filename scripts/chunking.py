@@ -57,10 +57,17 @@ def _walk(container, namespace, chunks):
 
 
 def _chunk_type(node, namespace, chunks):
+    """Turn one type (class/struct/enum/...) into one or more chunks.
+
+    Small types become a single chunk. Large types are split member by member,
+    but every piece keeps the type signature on top, so a chunk always says
+    which type it belongs to.
+    """
     text = node.text.decode("utf-8")
     type_name = _name_of(node)
     prefix = f"// namespace {namespace}\n" if namespace else ""
 
+    # Common case: the whole type fits in one chunk, so keep it whole.
     if len(prefix) + len(text) <= MAX_CHUNK_CHARS:
         chunks.append((prefix + text, _meta(namespace, type_name)))
         return
@@ -76,9 +83,12 @@ def _chunk_type(node, namespace, chunks):
     signature = node.text[: body.start_byte - node.start_byte].decode("utf-8").rstrip()
     header = f"{prefix}{signature}\n{{\n"
 
+    # We pack members (methods, properties...) into a batch until it would get
+    # too big, then `flush()` writes the batch as one chunk and starts a new one.
     batch, batch_names = [], []
 
     def flush():
+        """Write the current batch of members as one chunk, then reset it."""
         if batch:
             chunk_text = header + "\n\n".join(batch) + "\n}"
             chunks.append(
@@ -100,6 +110,7 @@ def _chunk_type(node, namespace, chunks):
             continue
 
         if len(header) + len(member_text) > MAX_CHUNK_CHARS:
+            # One member alone is too big for a chunk: split it by lines.
             flush()
             _emit_split(
                 header, member_text + "\n}",
@@ -107,12 +118,14 @@ def _chunk_type(node, namespace, chunks):
             )
             continue
 
+        # Would adding this member overflow the current batch? If so, write the
+        # batch first, then start a fresh one with this member.
         batch_size = len(header) + sum(len(t) for t in batch) + len(member_text)
         if batch and batch_size > MAX_CHUNK_CHARS:
             flush()
         batch.append(member_text)
         batch_names.append(member_name)
-    flush()
+    flush()  # write whatever members are left in the last batch
 
 
 def _emit_split(header, text, meta, chunks):
@@ -129,15 +142,18 @@ def _emit_split(header, text, meta, chunks):
 
 
 def _name_of(node):
+    """Return a node's declared name (e.g. the class name), or "" if it has none."""
     name = node.child_by_field_name("name")
     return name.text.decode("utf-8") if name is not None else ""
 
 
 def _qualify(namespace, name):
+    """Join a namespace and a name with a dot, e.g. "App.Auth" + "Login"."""
     return f"{namespace}.{name}" if namespace and name else (name or namespace)
 
 
 def _meta(namespace, type_name, members=""):
+    """Build the metadata dict tagged onto a chunk (namespace, type, members)."""
     meta = {"namespace": namespace, "type_name": type_name}
     if members:
         meta["members"] = members
