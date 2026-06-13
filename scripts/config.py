@@ -64,6 +64,16 @@ class Settings(BaseSettings):
     # in logging_setup.py applies it.
     log_level: str = Field("INFO", validation_alias="LOG_LEVEL")
 
+    # --- Security (plan 3.8, M10) ---
+    # Qdrant auth + transport. Empty key = unauthenticated (the local Docker
+    # default); set both for a secured/remote Qdrant (e.g. Qdrant Cloud, which
+    # is API-key + TLS). qdrant.py passes these to the one QdrantClient.
+    qdrant_api_key: str = Field("", validation_alias="QDRANT_API_KEY")
+    qdrant_https: bool = Field(False, validation_alias="QDRANT_HTTPS")
+    # Max bytes accepted on POST /search. Flask returns 413 for anything bigger,
+    # before the body is parsed or embedded. Queries are short; 64 KB is ample.
+    max_content_length: int = Field(65536, validation_alias="MAX_CONTENT_LENGTH")
+
     @property
     def query_variant_suffixes(self) -> tuple[str, ...]:
         """Comma-separated suffixes for extra query variants. Reproduces the

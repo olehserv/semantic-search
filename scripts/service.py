@@ -20,6 +20,10 @@ from query_index import query, get_engine
 from logging_setup import setup_logging
 
 app = Flask(__name__)
+# Cap the request body (plan 3.8): Flask returns 413 for anything bigger, before
+# the JSON is parsed or the query embedded. Queries are short; the default is
+# generous (64 KB) and tunable via MAX_CONTENT_LENGTH.
+app.config["MAX_CONTENT_LENGTH"] = settings.max_content_length
 
 
 @app.route("/health")
@@ -37,8 +41,9 @@ def search():
     """
     data = request.get_json(silent=True) or {}
     q = data.get("query")
-    if not q:
-        return jsonify({"error": "missing 'query'"}), 400
+    # Must be a non-empty string: a list/dict/number would break query() below.
+    if not q or not isinstance(q, str):
+        return jsonify({"error": "missing or non-string 'query'"}), 400
     try:
         return jsonify(query(q))
     except Exception as e:

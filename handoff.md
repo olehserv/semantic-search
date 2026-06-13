@@ -4,9 +4,9 @@
 > of every working session, so anyone (human or agent) can continue the work
 > without extra context.
 
-**Last updated:** 2026-06-13 (task 3.7 — lazy initialization)
-**Repo state:** branch `phase-3-lazy-init`. Merged into `main` so far:
-PRs #1–#15 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.6).
+**Last updated:** 2026-06-13 (task 3.8 — security pass)
+**Repo state:** branch `phase-3-security-pass`. Merged into `main` so far:
+PRs #1–#16 (Phase 0 through Phase 2, plus Phase 3 tasks 3.1–3.7).
 
 ---
 
@@ -77,13 +77,14 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
 
 1. **Continue Phase 3 (operations hardening).** Tasks 3.1 (config layer), 3.2
    (embedding cache v2), 3.3 (safe index rebuild), 3.4 (incremental indexing),
-   3.5 (structured logging), 3.6 (pipeline test suite), and 3.7 (lazy init) are
-   done; next up is 3.8 (security pass — Qdrant API key for non-local use, no
-   pickle loads left, request-size limits on `/search`) — see the plan table in
-   `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is complete
-   (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912, nDCG@5 0.343 →
-   0.760, a report per change). Remaining Phase 3 work: the security pass (3.8)
-   and ask.py cleanup (3.9).
+   3.5 (structured logging), 3.6 (pipeline test suite), 3.7 (lazy init), and
+   3.8 (security pass) are done; next up is **3.9 (ask.py cleanup** — logs to
+   stderr [already done in 3.5], a larger context budget that counts tokens not
+   chars, and replacing the phrase-matching quality check with a structured
+   self-check or removing the retry), the **last Phase 3 item** — see the plan
+   table in `docs/reviews/2026-06-11-production-readiness-plan.md`. Phase 2 is
+   complete (all of 2.1–2.6 done; "done when" met: Recall@5 0.600 → 0.912,
+   nDCG@5 0.343 → 0.760, a report per change).
 
 ## How to verify the project right now
 
@@ -101,6 +102,26 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
+
+- **2026-06-13 (task 3.8 — security pass, M2 + M10)** — Three parts.
+  **(1) Qdrant auth (M10):** new `QDRANT_API_KEY` (default `""` = unauthenticated,
+  the local default) and `QDRANT_HTTPS` (default `0`) config fields; `qdrant.py`
+  passes `api_key=… or None` and `https=…` to the single `QdrantClient` in
+  `get_qdrant_client()`, so build/query/service all reach a secured/remote Qdrant
+  (e.g. Qdrant Cloud) with no other change. **(2) Request-size limit (M10):**
+  `service.py` sets `app.config["MAX_CONTENT_LENGTH"]` (new `MAX_CONTENT_LENGTH`
+  config, default 64 KB) — Flask returns **413** for oversize bodies before
+  parsing/embedding — and `/search` now rejects a missing **or non-string** query
+  with **400**. **(3) No pickle loads (M2):** verified there are none (BM25 is
+  rebuilt from Qdrant, the cache is SQLite from 3.2); added
+  `tests/test_no_pickle.py` to keep it that way — it greps `scripts/`+`eval/` for
+  `pickle.load`/`torch.load`/`joblib`/`dill`/`cloudpickle` and fails if any
+  reappear. New `tests/test_qdrant_client.py` (auth kwargs reach the client) +
+  `test_service.py` 413/400 cases + `test_config.py` field cases. **105 tests
+  green, ruff clean**, demo eval unchanged at 1.000 (default path = no key, plain
+  http). Docker compose stays unauthenticated for local dev (the key is opt-in
+  via env for remote deploys). Also fixed a README drift: `EMB_CACHE_PATH`
+  default is `.db` (SQLite), not `.pkl`.
 
 - **2026-06-13 (task 3.7 — lazy initialization, M1)** — Moved the heavy
   model setup out of import time. `scripts/model_setup.py` is now a single
