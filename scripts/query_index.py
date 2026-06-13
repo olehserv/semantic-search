@@ -25,8 +25,7 @@ import json
 import logging
 from time import time
 
-# Imported for its side effect: configures Settings.embed_model / Settings.llm.
-import model_setup  # noqa: F401
+import model_setup
 import qdrant
 from config import settings
 from embedding_cache import EmbeddingCache
@@ -169,6 +168,11 @@ def build_query_engine():
     The `#6` / `#12` notes are just the tuned top_k values.
     """
     logger.debug("build_query_engine(): START")
+
+    # Configure the embedding model now (lazy, plan 3.7): the retrievers below
+    # and the cosine re-rank in query() need Settings.embed_model. query() always
+    # builds the engine first, so this covers the whole search path.
+    model_setup.setup_models()
 
     # 1. load index
     logger.debug("build_query_engine(): load index START")
