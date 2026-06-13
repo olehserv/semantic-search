@@ -17,6 +17,7 @@ from flask import Flask, request, jsonify
 
 from config import settings
 from query_index import query, get_engine
+from logging_setup import setup_logging
 
 app = Flask(__name__)
 
@@ -45,9 +46,10 @@ def search():
 
 
 def main():
-    # Heavy work happens only here, not at import time: configure the
+    # Heavy work happens only here, not at import time: configure logging, the
     # embedding model + LLM, then warm the retrievers once so the first real
     # request does not pay the build cost.
+    setup_logging()
     import model_setup  # noqa: F401  (import side effect: configures Settings)
     get_engine()
     app.run(host="0.0.0.0", port=settings.service_port)
