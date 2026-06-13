@@ -28,8 +28,8 @@ English with analogies.
    each call to the service over HTTP.
 5. **Answer** (`ask.py`) — sends the best code chunks to a local LLM (Ollama)
    and returns a written answer. It detects the question type (locate / flow /
-   debug / explain) and retries with more context if the first answer is too
-   weak.
+   debug / explain) and trims the code to a token budget (`MAX_CONTEXT_TOKENS`)
+   before asking.
 
 | File | Role |
 |------|------|
@@ -136,6 +136,7 @@ read from environment variables — one typed place instead of scattered
 | Cross-encoder re-ranker | `CROSS_ENCODER_MODEL` | `""` (off) |
 | Service port | `PORT` | `8000` |
 | Max `/search` body size | `MAX_CONTENT_LENGTH` | `65536` (bytes; bigger requests get HTTP 413) |
+| ask.py context budget | `MAX_CONTEXT_TOKENS` | `4000` (tokens of code sent to the LLM; counted, not chars) |
 | Query variants | `QUERY_VARIANT_SUFFIXES` | `implementation` (comma-separated; add domain terms, e.g. `implementation,.NET core backend`) |
 | Log level | `LOG_LEVEL` | `INFO` (status only; set `LOG_LEVEL=DEBUG` to see the per-step traces). All logs go to stderr. |
 

@@ -1,9 +1,9 @@
 """Answer a question in words, using the code the search found.
 
 Pipeline on top of query(): search the code -> guess what kind of question it
-is (locate / flow / debug / explain) -> build a prompt with the found code ->
-ask a local LLM (Ollama) -> if the answer says it lacked context, retry once
-with more code. Run it from the command line:
+is (locate / flow / debug / explain) -> build a prompt with the found code
+(trimmed to a token budget) -> ask a local LLM (Ollama) once. Run it from the
+command line:
 
     python scripts/ask.py "how does the request pipeline work"
 """
@@ -13,20 +13,35 @@ import model_setup
 from query_index import query
 from llama_index.core import Settings
 
+from config import settings
+
 logger = logging.getLogger(__name__)
 
 
-def format_context(context):
-    """Turn the search results into one text block for the LLM prompt.
+def _format_chunk(c):
+    """One labelled section for the prompt: rank, file, path, score, then code."""
+    return f"[{c['rank']}] {c['file']} ({c['path']}) score={c['score']}\n{c['text']}"
 
-    Each chunk becomes a labelled section: rank, file, path, score, then the code.
+
+def build_context(context, max_tokens):
+    """Join chunk sections in rank order, stopping before the token budget.
+
+    Counts TOKENS with the LLM tokenizer, not characters (review finding M3):
+    code tokenizes very differently from prose, and the model's window is in
+    tokens. Whole chunks only — never slice a snippet mid-way. The top chunk is
+    always kept, even if it alone is over budget.
     """
-    return "\n\n".join(
-        f"[{c['rank']}] {c['file']} ({c['path']}) score={c['score']}\n{c['text']}"
-        for c in context
-    )
-
-MAX_CONTEXT_CHARS = 6000
+    tokenizer = Settings.tokenizer
+    sections = []
+    used = 0
+    for c in context:
+        section = _format_chunk(c)
+        n = len(tokenizer(section))
+        if sections and used + n > max_tokens:
+            break
+        sections.append(section)
+        used += n
+    return "\n\n".join(sections)
 
 
 def detect_mode(q):
@@ -71,79 +86,23 @@ Analyze code and identify potential issues or bugs.
 
     return instructions.get(mode, "")
 
-def ensure_answer_fallback(response, q, tried=False):
-    """If the answer admits it lacked context, retry once with more code.
-
-    The `tried` flag makes this a one-shot retry (it calls itself once with
-    tried=True), so we never loop forever.
-
-    How we detect a weak answer: we look for phrases like "not enough
-    information". This is a simple keyword check, so it is best-effort — a weak
-    answer worded differently will slip through. Good enough as a safety net.
-    """
-    response_text = response.text
-
-    # Second pass already happened -> accept whatever we got.
-    if tried:
-        return response
-
-    # The first answer did NOT complain about missing context -> keep it.
-    if not any(x in response_text.lower() for x in [
-        "not enough information",
-        "insufficient",
-        "cannot determine",
-        "not clear"
-    ]):
-        return response
-
-    # Otherwise: fetch more chunks (top_k=12) and ask again, just once.
-    extra = query(q, top_k=12)
-    context2 = format_context(extra["context"])
-
-    prompt2 = f"""
-You are a senior .NET engineer.
-
-The previous answer was insufficient because context was too limited.
-
-Now you have more code snippets.
-
-Instructions:
-- Re-evaluate the question
-- Use the extended context
-- Provide a complete answer
-
-Question:
-{q}
-
-Extended code:
-{context2}
-"""
-
-    new_response = Settings.llm.complete(prompt2)
-
-    return ensure_answer_fallback(new_response, q, tried=True)
-
 
 def ask(q, mode=None):
     """Answer the question `q` in words, based only on the code we found.
 
-    Searches the code, trims the context to a safe size, picks a mode, builds
-    the prompt, and calls the LLM (with the one-shot fallback). Returns the
-    answer text, or a short message if nothing relevant was found.
+    Searches the code, trims the context to the token budget, picks a mode,
+    builds the prompt, and calls the LLM once. Returns the answer text, or a
+    short message if nothing relevant was found.
     """
     model_setup.setup_models()  # ensure Settings.llm is ready (lazy, plan 3.7)
-    result = query(q)
+    # Fetch a few more chunks than the search default so the larger token budget
+    # has something to fill; build_context() then trims to the budget.
+    result = query(q, top_k=12)
 
     if not result["context"]:
         return "No relevant code found."
 
-    context = format_context(result["context"])
-
-    # Keep the prompt under the size limit. Cut on a chunk border ("\n\n") so we
-    # do not slice a code snippet in half.
-    if len(context) > MAX_CONTEXT_CHARS:
-        trimmed = context[:MAX_CONTEXT_CHARS]
-        context = trimmed.rsplit("\n\n", 1)[0] if "\n\n" in trimmed else trimmed
+    context = build_context(result["context"], settings.max_context_tokens)
 
     if mode is None:
         mode = detect_mode(q)
@@ -179,8 +138,7 @@ Code:
 """
 
     try:
-        response = ensure_answer_fallback(Settings.llm.complete(prompt), q)
-        return response.text
+        return Settings.llm.complete(prompt).text
     except Exception as e:
         return f"LLM error: {str(e)}\n\nContext was:\n{context[:1000]}"
 
