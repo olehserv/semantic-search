@@ -7,10 +7,13 @@ with more code. Run it from the command line:
 
     python scripts/ask.py "how does the request pipeline work"
 """
+import logging
+
 from query_index import query
 from llama_index.core import Settings
 
-DEBUG = True
+logger = logging.getLogger(__name__)
+
 
 def format_context(context):
     """Turn the search results into one text block for the LLM prompt.
@@ -149,8 +152,7 @@ def ask(q, mode=None):
         if mode in ["explain", "flow"]:
             mode = "locate"
 
-    if DEBUG:
-        print(f"[DEBUG] Mode: {mode}")
+    logger.debug("Mode: %s", mode)
 
     prompt = f"""
 You are a senior .NET engineer.
@@ -184,5 +186,8 @@ Code:
 
 if __name__ == "__main__":
     import sys
+    from logging_setup import setup_logging
+    setup_logging()
     q = " ".join(sys.argv[1:])
+    # The answer is the program's real output -> stdout. Logs go to stderr.
     print(ask(q))

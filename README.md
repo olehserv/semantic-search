@@ -134,6 +134,7 @@ read from environment variables — one typed place instead of scattered
 | Cross-encoder re-ranker | `CROSS_ENCODER_MODEL` | `""` (off) |
 | Service port | `PORT` | `8000` |
 | Query variants | `QUERY_VARIANT_SUFFIXES` | `implementation` (comma-separated; add domain terms, e.g. `implementation,.NET core backend`) |
+| Log level | `LOG_LEVEL` | `INFO` (status only; set `LOG_LEVEL=DEBUG` to see the per-step traces). All logs go to stderr. |
 
 | Other | Where |
 |-------|-------|

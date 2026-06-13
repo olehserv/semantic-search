@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     # --- Service ---
     service_port: int = Field(8000, validation_alias="PORT")
 
+    # --- Logging (plan 3.5, M11) ---
+    # Root log level for the scripts: DEBUG shows the per-step traces, INFO (the
+    # default) shows only status/progress. Read from LOG_LEVEL; setup_logging()
+    # in logging_setup.py applies it.
+    log_level: str = Field("INFO", validation_alias="LOG_LEVEL")
+
     @property
     def query_variant_suffixes(self) -> tuple[str, ...]:
         """Comma-separated suffixes for extra query variants. Reproduces the

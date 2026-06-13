@@ -8,9 +8,9 @@ This is the heart of the search. For one question it:
      cross-encoder), then
   5. returns the top chunks as JSON.
 
-Output contract: this module writes ONLY the final JSON to stdout. Every debug
-line goes to stderr (see the `print` redirect below), because mcp_server.py and
-the CLI read this script's stdout as JSON — debug text there would corrupt it.
+Output contract: this module writes ONLY the final JSON to stdout. All logging
+goes to stderr (the logging module's default), because mcp_server.py and the CLI
+read this script's stdout as JSON — log text there would corrupt it.
 """
 from llama_index.core import Settings
 from llama_index.core.retrievers import VectorIndexRetriever
@@ -22,24 +22,20 @@ from llama_index.core import VectorStoreIndex
 
 import sys
 import json
-import functools
-from datetime import datetime
+import logging
 from time import time
 
-# All diagnostic output in this module goes to stderr, so stdout carries only
-# the final JSON result (mcp_server.py parses this script's stdout as JSON).
-print = functools.partial(print, file=sys.stderr, flush=True)
-
 # Imported for its side effect: configures Settings.embed_model / Settings.llm.
-# Deliberately after the print-to-stderr redirect above (E402) so any import
-# noise cannot contaminate the JSON on stdout.
-import model_setup  # noqa: E402, F401
-import qdrant  # noqa: E402
-from config import settings  # noqa: E402
-from embedding_cache import EmbeddingCache  # noqa: E402
-from ranking import (  # noqa: E402
+import model_setup  # noqa: F401
+import qdrant
+from config import settings
+from embedding_cache import EmbeddingCache
+from ranking import (
     expand_query, rrf_scores, score_candidates, blend_cross_encoder,
 )
+from logging_setup import setup_logging
+
+logger = logging.getLogger(__name__)
 
 # Comma-separated suffixes for extra query variants (env QUERY_VARIANT_SUFFIXES).
 # Put domain terms for your codebase here (e.g. "implementation,.NET core
@@ -71,11 +67,11 @@ def _get_cross_encoder():
     global _cross_encoder
     if _cross_encoder is None:
         from sentence_transformers import CrossEncoder
-        print(f"[DEBUG] loading cross-encoder {CROSS_ENCODER_MODEL}")
+        logger.info("loading cross-encoder %s", CROSS_ENCODER_MODEL)
         _cross_encoder = CrossEncoder(CROSS_ENCODER_MODEL)
     return _cross_encoder
 
-print(f"[DEBUG] [{datetime.now()}] BEGIN query_index")
+logger.debug("BEGIN query_index")
 
 # The embedding cache is built lazily on first use (see _get_cache), not at
 # import time, so just importing this module never opens a database file. That
@@ -135,7 +131,7 @@ def get_bm25_retriever(index):
     # time the engine is built (once per long-lived process).
     client = qdrant.get_qdrant_client()
     nodes = load_all_nodes(client, qdrant.COLLECTION_NAME)
-    print(f"[DEBUG] BM25 nodes loaded from Qdrant: {len(nodes)}")
+    logger.debug("BM25 nodes loaded from Qdrant: %d", len(nodes))
     if not nodes:
         # Lesson from review finding C2: an empty node list must fail with a
         # clear action, not BM25Retriever's opaque ValueError.
@@ -172,37 +168,37 @@ def build_query_engine():
 
     The `#6` / `#12` notes are just the tuned top_k values.
     """
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): START")
+    logger.debug("build_query_engine(): START")
 
     # 1. load index
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): load index START")
+    logger.debug("build_query_engine(): load index START")
     start = time()
     index = load_index()
-    print(f"[DEBUG] len(index.docstore.docs) = {len(index.docstore.docs)}")
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): load index END. Duration {time() - start:.2f}")
+    logger.debug("len(index.docstore.docs) = %d", len(index.docstore.docs))
+    logger.debug("build_query_engine(): load index END. Duration %.2f", time() - start)
 
     # 2. semantic search, narrow: the top few chunks by meaning.
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever START")
+    logger.debug("build_query_engine(): VectorIndexRetriever (narrow) START")
     vector_retriever = VectorIndexRetriever(
         index=index,
         similarity_top_k=6 #6
     )
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever END")
+    logger.debug("build_query_engine(): VectorIndexRetriever (narrow) END")
 
     # 3. keyword search: exact word/identifier matches (BM25).
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): BM25Retriever START")
+    logger.debug("build_query_engine(): BM25Retriever START")
     bm25_retriever = get_bm25_retriever(index)
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): BM25Retriever END")
+    logger.debug("build_query_engine(): BM25Retriever END")
 
     # 4. semantic search, wide: more chunks by meaning, as a recall safety net.
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever START")
+    logger.debug("build_query_engine(): VectorIndexRetriever (wide) START")
     vector_wide = VectorIndexRetriever(
         index=index,
         similarity_top_k=12 #12
     )
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): VectorIndexRetriever END")
+    logger.debug("build_query_engine(): VectorIndexRetriever (wide) END")
 
-    print(f"[DEBUG] [{datetime.now()}] build_query_engine(): END")
+    logger.debug("build_query_engine(): END")
 
     return vector_retriever, bm25_retriever, vector_wide
 
@@ -214,14 +210,14 @@ def hybrid_retrieve(query, vector, bm25, vector_wide):
     if query in _retrieve_cache:
         return _retrieve_cache[query]
 
-    print(f"[DEBUG] [{datetime.now()}] hybrid_retrieve start for query '{query}'")
-    print(f"[DEBUG] [{datetime.now()}] vector.retrieve")
+    logger.debug("hybrid_retrieve start for query '%s'", query)
+    logger.debug("vector.retrieve")
     results = [vector.retrieve(query)]
-    print(f"[DEBUG] [{datetime.now()}] bm25.retrieve")
+    logger.debug("bm25.retrieve")
     results.append(bm25.retrieve(query))
-    print(f"[DEBUG] [{datetime.now()}] vector_wide.retrieve")
+    logger.debug("vector_wide.retrieve")
     results.append(vector_wide.retrieve(query))
-    print(f"[DEBUG] [{datetime.now()}] hybrid_retrieve end for query '{query}'")
+    logger.debug("hybrid_retrieve end for query '%s'", query)
 
     _retrieve_cache[query] = results
     return results
@@ -246,7 +242,7 @@ def query(q, alpha=0.7, top_k=8):
 
     Returns {"answer": <summary>, "sources": [file names], "context": [chunks]}.
     """
-    print(f"[DEBUG] [{datetime.now()}] query(): get_engine")
+    logger.debug("query(): get_engine")
 
     vector, bm25, vector_wide = get_engine()
 
@@ -259,7 +255,7 @@ def query(q, alpha=0.7, top_k=8):
     list_weights = []
     nodes_by_id = {}
 
-    print(f"[DEBUG] [{datetime.now()}] query(): gather nodes START")
+    logger.debug("query(): gather nodes START")
     for sub_q in queries:
         weight = 1.5 if sub_q == q else 1.0
         for retriever_results in hybrid_retrieve(sub_q, vector, bm25, vector_wide):
@@ -278,10 +274,10 @@ def query(q, alpha=0.7, top_k=8):
         nodes_by_id.values(), key=lambda n: fused[n.node_id], reverse=True
     )[:RERANK_CANDIDATES]
 
-    print(f"Candidates: {len(ordered_nodes)}")
-    print(f"[DEBUG] [{datetime.now()}] query(): gather nodes END")
+    logger.debug("Candidates: %d", len(ordered_nodes))
+    logger.debug("query(): gather nodes END")
 
-    print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks START")
+    logger.debug("query(): scores and ranks START")
     # Re-rank step: take a closer look at the candidates and give a final score.
     # Two ways to do it — see docs/CONCEPTS.md (re-ranking):
     #   - cross-encoder (optional): slower but more accurate, reads the query and
@@ -309,7 +305,7 @@ def query(q, alpha=0.7, top_k=8):
             # and stored, all in a single transaction (one disk write).
             embeddings = _get_cache().get_many(texts, embed_model)
         except Exception as e:
-            print(f"[DEBUG] cache failed ({e}); recomputing without cache")
+            logger.warning("cache failed (%s); recomputing without cache", e)
             embeddings = [embed_model.get_text_embedding(t) for t in texts]
         text_embeddings = {
             n.node_id: emb for n, emb in zip(ordered_nodes, embeddings)
@@ -318,11 +314,11 @@ def query(q, alpha=0.7, top_k=8):
             ordered_nodes, fused, query_emb, text_embeddings, alpha=alpha,
         )
     ranked = sorted(scored, key=lambda x: x[1], reverse=True)
-    print(f"[DEBUG] [{datetime.now()}] query(): scores and ranks END")
+    logger.debug("query(): scores and ranks END")
 
     final_nodes = [n for n, _ in ranked[:top_k]]
 
-    print(f"Returned: {len(final_nodes)}")
+    logger.debug("Returned: %d", len(final_nodes))
 
     score_map = {n.node_id: s for n, s in scored}
     context = [
@@ -343,7 +339,8 @@ def query(q, alpha=0.7, top_k=8):
     }
 
 if __name__ == "__main__":
+    setup_logging()  # logs to stderr; stdout stays reserved for the JSON below
     q = " ".join(sys.argv[1:])
-    # Emit the result as JSON on real stdout (the module-level `print` above
-    # is redirected to stderr).
+    # Emit the result as JSON on real stdout (logging goes to stderr, so the
+    # stdout stream carries only this JSON — the CLI / MCP contract).
     sys.stdout.write(json.dumps(query(q)) + "\n")

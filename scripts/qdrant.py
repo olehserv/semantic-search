@@ -9,8 +9,11 @@ import subprocess
 import time
 import os
 import re
+import logging
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 # Public names kept for callers (query_index.py, build_index.py); values now
 # come from the central config layer (plan 3.1).
@@ -58,7 +61,7 @@ def ensure_qdrant():
     if not settings.qdrant_autostart:
         for _ in range(30):
             if get_qdrant_client() is not None:
-                print("✅ Qdrant is ready")
+                logger.info("✅ Qdrant is ready")
                 return
             time.sleep(1)
         raise RuntimeError(
@@ -66,7 +69,7 @@ def ensure_qdrant():
             "(QDRANT_AUTOSTART=0, so no container was started)"
         )
 
-    print("🚀 Starting Qdrant container...")
+    logger.info("🚀 Starting Qdrant container...")
 
     try:
         subprocess.run(
@@ -90,7 +93,7 @@ def ensure_qdrant():
     # wait until the container is up
     for _ in range(15):
         if get_qdrant_client() is not None:
-            print("✅ Qdrant is ready")
+            logger.info("✅ Qdrant is ready")
             return
         time.sleep(1)
 
@@ -172,4 +175,6 @@ def promote_collection(client, alias_name, new_collection):
 
 
 if __name__ == "__main__":
+    from logging_setup import setup_logging
+    setup_logging()
     ensure_qdrant()
