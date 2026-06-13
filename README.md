@@ -62,7 +62,25 @@ curl -XPOST localhost:8000/search -H 'Content-Type: application/json' \
      -d '{"query":"where is authentication handled"}'
 ```
 
-You get back ranked results as JSON (file, path, score, snippet).
+You get back ranked results as JSON — `sources` (the matching files) and `context` (each snippet with its score and rank):
+
+```json
+{
+  "answer": "Top 8 relevant code snippets retrieved. See context for details.",
+  "sources": ["LoginService.cs", "LoginUserCommand.cs"],
+  "context": [
+    {
+      "rank": 1,
+      "file": "LoginService.cs",
+      "path": "src/Auth/LoginService.cs",
+      "score": 0.873,
+      "text": "public bool VerifyPassword(string user, string pw) { ... }"
+    }
+  ]
+}
+```
+
+(The `text` field is the code snippet, trimmed to ~800 characters.)
 
 > 💡 No service running? A one-off search still works — it just pays a slow cold start each time:
 > ```bash
@@ -101,6 +119,21 @@ That `command` just needs a Python with `mcp` and `requests` installed — the M
 ---
 
 ## 🛠️ How it works (under the hood)
+
+```text
+  📥 INDEX  (run once, and again when code changes)
+     .cs / .csproj / .sln ──► build_index.py ──► 🗂️  Qdrant
+                                                  (vectors + chunk text)
+
+  🔎 SEARCH  (every question)
+     Claude Code ─MCP─► mcp_server.py ─HTTP─► service.py ──► 🗂️  Qdrant
+                                              (warm engine:       │
+                                               query_index +      ▼
+                                               ranking)     🎯 ranked JSON
+
+  🗣️ ASK  (optional)
+     ask.py ──► search ──► 💬 Ollama ──► written answer
+```
 
 1. **📥 Index** (`build_index.py`) — reads `.cs`/`.csproj`/`.sln`/`.slnx` files, cuts them into chunks, turns each chunk into a vector with a local HuggingFace model, and stores the vectors (plus the text) in Qdrant.
 2. **🔎 Search + rank** (`query_index.py`) — runs three searches (vector top-6, BM25, vector top-12) across a few variants of your question, removes duplicates, and gives each result a combined score (`ranking.py`). BM25 is rebuilt in memory from Qdrant.
