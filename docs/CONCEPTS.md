@@ -1,145 +1,292 @@
-# Concepts (plain English)
+# 🧠 Concepts (plain English)
 
-This guide explains the AI ideas this project uses. No deep math. Each idea has
-three parts: a **simple idea**, **why we use it**, and a **real-world analogy**.
+Welcome! 👋 This guide explains the AI ideas behind this project — **no heavy
+math, no jargon**. If you've never touched embeddings or vector search before,
+you're exactly who this is written for.
 
-The concepts follow the search pipeline, in order. If you read them top to
-bottom, you will understand how a question turns into ranked code.
+We follow the search pipeline **in order**. Read top to bottom and you'll see
+how a plain-English question like *"where do we check the password?"* turns into
+a ranked list of the right code files. 🎯
 
----
+Each concept has the same shape:
 
-## 1. Embeddings (vectors)
+- 💡 **The idea** — one or two sentences.
+- 🧪 **A tiny example** — concrete, with real-ish numbers or code.
+- 🤔 **Why we use it** — what problem it solves here.
+- 🌍 **An analogy** — the same idea from everyday life.
+- 🛠️ **In this project** — where it lives in the code.
 
-**Simple idea:** An embedding turns a piece of text into a list of numbers (a
-"vector"). Texts with a similar meaning get similar numbers.
-
-**Why we use it:** Computers cannot compare meaning directly. But they can
-compare numbers fast. So we turn every code chunk into numbers once, and later
-compare the question's numbers to them.
-
-**Analogy:** Think of a map. Every city is a pair of numbers (latitude,
-longitude). Cities close on the map are close in the numbers too. Embeddings do
-the same for meaning: close in meaning means close in the numbers.
-
-*In this project:* `model_setup.py` loads the embedding model. `build_index.py`
-uses it to embed every chunk.
+> Quick mental model of the whole thing:
+>
+> ```text
+> your question ─► turn into numbers ─► find the nearest code ─► rank it ─► answer
+> ```
 
 ---
 
-## 2. Vector database (Qdrant)
+## 0. First, what is a "vector"? 🔢
 
-**Simple idea:** A vector database stores many vectors and finds the ones
-closest to a given vector, quickly.
+Before we start: a **vector** is just a **list of numbers**. That's it.
 
-**Why we use it:** We may have thousands of code chunks. Checking them one by one
-is slow. A vector database is built to answer "which vectors are nearest?" fast.
+```text
+[0.12, -0.04, 0.91, 0.33, ...]
+```
 
-**Analogy:** A library with a very good librarian. You describe what you want,
-and the librarian instantly hands you the few closest books — without reading
-every book on every shelf.
+You can think of each number as a coordinate. Two numbers `(x, y)` place a point
+on a flat map. Three numbers `(x, y, z)` place it in 3D space. This project uses
+**768 numbers** per piece of text — so each text is a point in a 768-dimensional
+space. We can't picture 768 dimensions, but the computer does the same simple
+thing it does in 2D: measure how close two points are. 📍
 
-*In this project:* `qdrant.py` connects to [Qdrant](https://qdrant.tech/) and
-starts it in Docker when needed.
-
----
-
-## 3. Cosine similarity
-
-**Simple idea:** Cosine similarity is a score (about 0 to 1) for how close two
-vectors point in the same direction. Higher means more alike.
-
-**Why we use it:** It is how we measure "how similar in meaning". It ignores
-length and looks only at direction, which is what we want for meaning.
-
-**Analogy:** Two people pointing at the sky. If they point the same way, they
-mean the same star (score near 1). If they point in very different directions,
-they mean different things (score near 0).
-
-*In this project:* `ranking.py` → `cosine()`.
+Keep that picture in mind — everything below builds on it.
 
 ---
 
-## 4. Keyword search (BM25) vs semantic search
+## 1. Embeddings (turning text into vectors) ✍️➡️🔢
 
-**Simple idea:** Keyword search (BM25) finds exact words. Semantic search finds
-meaning, even when the words differ.
+💡 **The idea:** An *embedding* turns a piece of text into a vector (those
+numbers above). The magic part: texts with **similar meaning** get **similar
+numbers** — even if they use different words.
 
-**Why we use both:** Meaning search is great for questions like "where do we
-handle login". But code has exact names — a class `AuthService`, a method
-`Validate`. If you search that exact name, keyword search is better. Code search
-needs both.
+🧪 **Tiny example:** imagine a model that only uses 2 numbers. It might place:
 
-**Analogy:** Looking for a book. Semantic search is asking a friend "that book
-about a boy wizard" (meaning). Keyword search is looking up the exact title in
-the index (words). Sometimes you know the vibe; sometimes you know the title.
+```text
+"login"          -> [0.91, 0.10]
+"sign in"        -> [0.88, 0.14]   ← almost the same spot as "login"!
+"delete account" -> [0.10, 0.95]   ← far away, different meaning
+```
 
-*In this project:* the semantic side is the vector retrievers; the keyword side
-is `BM25Retriever`, built in `query_index.py`.
+Notice "login" and "sign in" land close together **without sharing a single
+word**. That's the whole point — the model captures *meaning*, not spelling.
 
----
+🤔 **Why we use it:** Computers can't compare meaning directly, but they compare
+numbers in a flash. So we turn every code chunk into a vector **once** (at index
+time), and later just compare the question's vector to them.
 
-## 5. Hybrid search + RRF fusion
+🌍 **Analogy:** A map. Every city is a pair of numbers (latitude, longitude).
+Cities close on the map have close numbers. Embeddings do the same for meaning:
+close in meaning → close in numbers.
 
-**Simple idea:** Hybrid search runs several searches and then merges their result
-lists into one. We merge with **RRF** (Reciprocal Rank Fusion), which combines
-lists by **rank** (1st, 2nd, 3rd...), not by raw score.
-
-**Why we use rank, not score:** Different searches give scores on different
-scales. Cosine is 0 to 1. BM25 can be any size. Mixing those raw numbers is
-unfair — one would drown out the other. Rank is the same idea for everyone: being
-1st means the same thing in every list.
-
-**Analogy:** Three judges rank the same contestants. One judge scores out of 10,
-another out of 100. You should not add their raw scores. Instead, you reward the
-*place* each judge gave (1st, 2nd...). That is fair, and that is RRF.
-
-*In this project:* `ranking.py` → `rrf_scores()` does the fusion. `query_index.py`
-runs the searches and passes their ranked lists in.
+🛠️ **In this project:** `model_setup.py` loads the embedding model
+(`BAAI/bge-base-en-v1.5`, which outputs 768 numbers). `build_index.py` uses it to
+embed every code chunk.
 
 ---
 
-## 6. Re-ranking: bi-encoder vs cross-encoder
+## 2. Vector database (Qdrant) 🗂️
 
-**Simple idea:** After we have a short list of good candidates, we take a closer
-look and re-score them. Two ways:
+💡 **The idea:** A *vector database* stores lots of vectors and answers one
+question very fast: **"which stored vectors are nearest to this one?"**
 
-- **Bi-encoder (cosine, default):** compare the question's vector with each
-  chunk's vector. Fast, because chunk vectors are made ahead of time.
-- **Cross-encoder (optional):** read the question and the chunk *together* and
-  score the pair. Slower, but more accurate.
+🧪 **Tiny example:** you've stored 5,000 code-chunk vectors. You hand Qdrant your
+question vector and say "give me the 6 closest." It returns them in milliseconds
+— without comparing against all 5,000 one by one (it uses a clever index).
 
-**Why we offer both:** The cross-encoder ranks better, but it must run once per
-candidate for every question, so it is slower. It is **off by default** and only
-turned on when you set `CROSS_ENCODER_MODEL`.
+🤔 **Why we use it:** A real codebase has thousands of chunks. Checking each one
+by hand every query would be slow. Qdrant is built exactly for fast
+nearest-neighbor lookup.
 
-**Analogy:** Hiring. The bi-encoder is like matching résumés to a job by keywords
-— quick, rough. The cross-encoder is a real interview — you read the candidate
-and the job side by side. Better judgment, but it takes more time, so you only
-interview the short list.
+🌍 **Analogy:** A library with a brilliant librarian. You describe what you want
+and they instantly hand you the few closest books — without re-reading every book
+on every shelf. 📚
 
-**One more point:** even when on, the cross-encoder score is *blended* with the
-RRF score, not used alone. Used alone it ignored exact keyword matches, which
-code search needs.
-
-*In this project:* `ranking.py` → `score_candidates()` (cosine) and
-`blend_cross_encoder()` (cross-encoder). `query_index.py` picks which one to use.
+🛠️ **In this project:** `qdrant.py` connects to [Qdrant](https://qdrant.tech/)
+and starts it in Docker when needed. `build_index.py` writes vectors in;
+`query_index.py` reads the nearest ones out.
 
 ---
 
-## 7. Chunking
+## 3. Cosine similarity (how "close" two vectors are) 📐
 
-**Simple idea:** Chunking splits big files into smaller pieces before embedding.
-For C# we split on type and method borders, not on a fixed number of lines.
+💡 **The idea:** *Cosine similarity* is a score (roughly **0 to 1**) for how much
+two vectors point in the **same direction**. Same direction → near **1** (very
+alike). Right angle → **0** (unrelated).
 
-**Why we use it:** A whole file is too big for one vector to capture well. But a
-random cut can split a method in half, which makes a confusing chunk. Cutting on
-code borders keeps each chunk whole and meaningful. We also keep the type
-signature on every piece, so a chunk always says which class it came from.
+🧪 **Tiny example** (2D, so we can see it):
 
-**Analogy:** Cutting a cookbook into recipes. You cut between recipes, not in the
-middle of one. Each page still has the recipe title on top, so you always know
-what you are reading.
+```text
+A = "login"   = [0.91, 0.10]
+B = "sign in" = [0.88, 0.14]   → cosine(A, B) ≈ 0.99   (almost identical) ✅
+C = "delete"  = [0.10, 0.95]   → cosine(A, C) ≈ 0.21   (very different)  ❌
+```
 
-*In this project:* `chunking.py` uses tree-sitter to find the code borders.
-Files that are not C# (or do not parse) fall back to a simple sentence splitter
-in `build_index.py`.
+It looks at the **angle** between the arrows, not how long they are. That's good:
+we care about *meaning*, not how long the text was.
+
+🤔 **Why we use it:** It's our ruler for "how similar in meaning are these two
+texts?" — the core question of semantic search.
+
+🌍 **Analogy:** Two people pointing at the night sky. Point the same way → you
+mean the same star (≈1). Point in very different directions → different things
+(≈0). The *distance you stand apart* doesn't matter, only the *direction*. ✨
+
+🛠️ **In this project:** `ranking.py` → `cosine()`.
+
+---
+
+## 4. Keyword search (BM25) vs semantic search 🔑 vs 🧠
+
+💡 **The idea:** Two very different ways to search:
+- **Semantic search** — by *meaning* (uses the vectors above).
+- **Keyword search (BM25)** — by *exact words*. BM25 is a classic, battle-tested
+  formula that rewards rare matching words and doesn't over-reward long documents.
+
+🧪 **Tiny example** — each one wins a different case:
+
+| You search… | Semantic 🧠 | Keyword 🔑 |
+|---|---|---|
+| "where do we handle login" | ✅ finds `AuthService` even without the word "login" | 🤷 may miss it if the word "login" isn't there |
+| `VerifyPassword` (exact method name) | 🤷 might drift to "similar" code | ✅ nails the exact match |
+
+🤔 **Why we use both:** Code is full of exact names — a class `AuthService`, a
+method `Validate`. Meaning-search is great for fuzzy questions but can miss an
+exact identifier; keyword-search nails identifiers but misses paraphrases. Code
+search needs **both**, so we run both.
+
+🌍 **Analogy:** Looking for a book. Semantic search is asking a friend *"that
+book about a boy wizard"* (meaning). Keyword search is typing the exact title
+into the catalog (words). Sometimes you know the vibe; sometimes you know the
+title. 🪄
+
+🛠️ **In this project:** the semantic side is the vector retrievers; the keyword
+side is `BM25Retriever`, rebuilt in memory from Qdrant in `query_index.py`.
+
+---
+
+## 5. Hybrid search + RRF fusion 🔀
+
+💡 **The idea:** *Hybrid search* runs several searches and **merges** their
+result lists into one. We merge with **RRF (Reciprocal Rank Fusion)**, which
+combines lists by **rank** (1st, 2nd, 3rd…) — **not** by raw score.
+
+🧮 **The formula** (don't worry, it's small): for each result, add up
+`1 / (k + rank)` across every list it appears in. `k` is a small constant that
+softens the gap between 1st and 2nd place. This project uses **`k = 60`**
+(`RRF_K` in `ranking.py`).
+
+🧪 **Worked example** — two searches return these top-3 lists:
+
+```text
+Semantic:  1) A    2) B    3) C
+Keyword:   1) B    2) D    3) A
+```
+
+Score each file (k = 60):
+
+```text
+A: 1/(60+1)  + 1/(60+3)  = 0.0164 + 0.0159 = 0.0323   🥇
+B: 1/(60+2)  + 1/(60+1)  = 0.0161 + 0.0164 = 0.0325   🥇 (just ahead)
+C: 1/(60+3)                = 0.0159
+D: 1/(60+2)                = 0.0161
+```
+
+**Merged order: B, A, D, C.** Notice B wins because it ranked high in *both*
+lists — appearing in two searches is a strong signal. 💪
+
+🤔 **Why rank, not raw score:** different searches use different scales. Cosine
+is 0–1; BM25 can be any size (10, 50, …). Adding those raw numbers is unfair —
+the big one drowns out the small one. But "being 1st" means the same thing in
+every list, so rank is a fair common currency.
+
+🌍 **Analogy:** Three judges rank the same contestants. One scores out of 10,
+another out of 100. You shouldn't add their raw scores — instead you reward the
+**place** each judge gave (1st, 2nd…). Fair, and that's RRF. 🏅
+
+🛠️ **In this project:** `ranking.py` → `rrf_scores()` does the fusion;
+`query_index.py` runs the searches and passes their ranked lists in. (It actually
+runs **three** retrievers across a few question variants, then fuses all of them.)
+
+---
+
+## 6. Re-ranking: bi-encoder vs cross-encoder 🔬
+
+💡 **The idea:** After fusion gives us a short list of good candidates, we take a
+**closer look** and re-score them. Two ways:
+
+- **Bi-encoder (cosine, the default):** compare the question's vector with each
+  chunk's pre-made vector. ⚡ Fast, because the chunk vectors already exist.
+- **Cross-encoder (optional):** feed the question **and** the chunk into the
+  model **together** and score the pair. 🧐 Slower, but sharper judgment.
+
+🧪 **Tiny example:** for the question "how do we hash passwords?" and a chunk
+about `BCrypt.HashPassword(...)`:
+- the bi-encoder sees two separate vectors that happen to be close;
+- the cross-encoder reads *both at once* and can notice the chunk **directly
+  answers** the question — so it may bump that chunk from rank 4 up to rank 1.
+
+🤔 **Why we offer both:** the cross-encoder ranks better but must run once **per
+candidate, per question** (it can't pre-compute), so it's slower. It's **off by
+default** and only turns on when you set `CROSS_ENCODER_MODEL`.
+
+⚖️ **One more point:** even when it's on, the cross-encoder score is **blended**
+with the RRF score, not used alone. Used alone, it tended to ignore exact keyword
+matches — which code search really needs.
+
+🌍 **Analogy:** Hiring. 📄 The bi-encoder is matching résumés to a job by
+keywords — quick and rough. The cross-encoder is a real **interview** — you read
+the candidate and the job side by side. Better judgment, but it takes time, so
+you only interview the short list, not everyone.
+
+🛠️ **In this project:** `ranking.py` → `score_candidates()` (cosine) and
+`blend_cross_encoder()` (cross-encoder). `query_index.py` picks which to use.
+
+---
+
+## 7. Chunking (splitting code before embedding) ✂️
+
+💡 **The idea:** *Chunking* splits big files into smaller pieces **before**
+embedding. For C# we split on **type and method borders**, not on a fixed number
+of lines.
+
+🧪 **Tiny example** — one file becomes clean, whole chunks:
+
+```text
+LoginService.cs
+ ├── chunk 1:  class LoginService { ...fields... }
+ ├── chunk 2:  public bool VerifyPassword(string user, string pw) { ... }
+ └── chunk 3:  public void Logout() { ... }
+```
+
+A naïve "cut every 40 lines" approach might slice `VerifyPassword` in half — half
+its logic in one chunk, half in another — and **both** chunks become confusing.
+Cutting on real code borders keeps each piece whole. We also keep the **type
+name** (`LoginService`) on every chunk, so a chunk always says where it came
+from.
+
+🤔 **Why we use it:** A whole file is too big for one vector to represent well
+(too many ideas squeezed into one point). Small, meaningful chunks embed far
+better — and well-chunked code was the **biggest single quality win** in this
+project's evaluation. 📈
+
+🌍 **Analogy:** Cutting a cookbook into recipes. You cut **between** recipes, not
+in the middle of one — and each page keeps its recipe title at the top, so you
+always know what you're reading. 🍪
+
+🛠️ **In this project:** `chunking.py` uses **tree-sitter** to find the code
+borders. Files that aren't C# (or don't parse) fall back to a simple sentence
+splitter in `build_index.py`.
+
+---
+
+## 🎬 Putting it all together
+
+Let's trace one question through the whole pipeline:
+
+> ❓ **"where is the user password verified at login?"**
+
+1. ✍️➡️🔢 **Embed** the question into a 768-number vector (concept 1).
+2. 🗂️ Ask **Qdrant** for the nearest chunk vectors (concept 2), scored by
+   **cosine similarity** (concept 3).
+3. 🔑 At the same time, run **BM25 keyword** search for words like "password",
+   "verify", "login" (concept 4).
+4. 🔀 **Fuse** all those ranked lists with **RRF** so results strong in *several*
+   searches rise to the top (concept 5).
+5. 🔬 **Re-rank** the short list for a final, sharper order (concept 6).
+6. 📦 Return the top chunks — each a clean, whole piece of code thanks to
+   **chunking** (concept 7) — as ranked JSON.
+
+The result: `LoginService.cs` and friends, in sensible order. 🎉
+
+Want to see the moving parts in code? Start at `scripts/query_index.py`
+(`query()`), which calls into `ranking.py` for all the scoring. And the
+[README](../README.md) shows how to run the whole thing.
