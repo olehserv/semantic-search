@@ -37,6 +37,9 @@ Code) a `search_codebase` MCP tool. See `README.md` for usage.
   findings are numbered C1–C4 (critical), H1–H7 (high), M1–M11 (medium).
 - `docs/reviews/2026-06-11-production-readiness-plan.md` — the work plan in
   4 phases, with "done when" criteria.
+- `docs/reviews/2026-06-13-closeout.md` — **closeout**: every finding mapped to
+  the task that closed it + verification evidence. **19/19 closed** (M7's
+  unbounded `_retrieve_cache` was found and LRU-capped in the closeout pass).
 
 ## Decisions already made (do not reopen)
 
@@ -104,6 +107,17 @@ bash eval/run_demo.sh                  # full e2e: venv + Qdrant + index + eval
 ```
 
 ## Status log
+
+- **2026-06-13 (review closeout + M7 fix)** — Cross-checked all 19
+  architecture-review findings against the tasks that closed them; wrote
+  `docs/reviews/2026-06-13-closeout.md`. The pass found the one residual —
+  **M7**: `query_index._retrieve_cache` was an **unbounded** dict (the warm
+  service had fixed only the "useless per-query" half) — and **fixed it in the
+  same pass**: the cache is now LRU-capped at `RETRIEVE_CACHE_SIZE` (new config,
+  default 256; pop+reinsert on hit, drop least-recently-used on overflow), with
+  unit tests. So **19/19 findings are now closed.** Verification on `main`: 114
+  tests green, ruff clean, demo eval 1.000, and a live `lfm` query returned
+  ranked results as clean JSON.
 
 - **2026-06-13 (task 3.9 — ask.py cleanup, M3 + M4; Phase 3 complete)** —
   Cleaned up the Q&A CLI. **M3a (fragile quality check):** removed
