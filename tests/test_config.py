@@ -23,6 +23,7 @@ CONFIG_ENV_VARS = (
     "EMBED_MODEL",
     "LLM_MODEL",
     "EMB_CACHE_PATH",
+    "EMB_CACHE_MAX_SIZE",
     "RERANK_CANDIDATES",
     "CROSS_ENCODER_MODEL",
     "PORT",
@@ -45,7 +46,8 @@ def test_defaults(clean_env):
     assert s.qdrant_autostart is True
     assert s.embed_model == "BAAI/bge-base-en-v1.5"
     assert s.llm_model == "llama3"
-    assert s.emb_cache_path == "./.claude/cache/embeddings.pkl"
+    assert s.emb_cache_path == "./.claude/cache/embeddings.db"
+    assert s.emb_cache_max_size == 50000
     assert s.rerank_candidates == 30
     assert s.cross_encoder_model == ""
     assert s.service_port == 8000
